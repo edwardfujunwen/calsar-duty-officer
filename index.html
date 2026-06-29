@@ -1,0 +1,2623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CalSAR Duty Officer Dashboard</title>
+<style>
+  :root {
+    --navy: #1a2b5e;
+    --navy-dark: #0f1a3d;
+    --navy-light: #2a3f7e;
+    --blue-accent: #4a7fbd;
+    --white: #ffffff;
+    --off-white: #f4f6fa;
+    --gray-100: #eef0f5;
+    --gray-200: #d8dce8;
+    --gray-400: #9098b0;
+    --gray-600: #5a6280;
+    --green: #2d8a4e;
+    --red: #c0392b;
+    --red-light: #fdecea;
+    --orange: #e67e22;
+    --orange-light: #fef3e2;
+    --shadow: 0 2px 12px rgba(26,43,94,0.12);
+    --shadow-lg: 0 4px 24px rgba(26,43,94,0.18);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--off-white); color: #1a1f36; min-height: 100vh; }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 60%, var(--navy-light) 100%);
+    color: white; padding: 0 32px; display: flex; align-items: center; gap: 20px;
+    height: 72px; box-shadow: var(--shadow-lg); position: sticky; top: 0; z-index: 100;
+  }
+  .header-logo { width: 48px; height: 48px; object-fit: contain; }
+  .header-title { font-size: 20px; font-weight: 700; }
+  .header-subtitle { font-size: 12px; opacity: 0.7; letter-spacing: 0.5px; text-transform: uppercase; }
+  .header-spacer { flex: 1; }
+  .api-key-btn {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+    color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; transition: background 0.2s;
+  }
+  .api-key-btn:hover { background: rgba(255,255,255,0.25); }
+  .api-key-btn.configured { background: rgba(45,138,78,0.4); border-color: rgba(45,138,78,0.6); }
+
+  /* ── Tab Nav ── */
+  .tab-nav {
+    background: var(--navy-dark); display: flex; gap: 0; padding: 0 32px;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+  }
+  .tab-btn {
+    background: none; border: none; color: rgba(255,255,255,0.6); padding: 14px 24px;
+    font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -2px; transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.9); }
+  .tab-btn.active { color: white; border-bottom-color: #6ab0d4; }
+
+  /* ── Layout ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; display: flex; flex-direction: column; gap: 24px; }
+
+  /* ── Cards ── */
+  .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .card-header {
+    background: var(--navy); color: white; padding: 14px 20px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  .card-header .step {
+    background: rgba(255,255,255,0.2); width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .card-body { padding: 20px; }
+
+  /* ── Form elements ── */
+  textarea {
+    width: 100%; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    padding: 12px 14px; font-size: 14px; font-family: inherit; resize: vertical;
+    transition: border-color 0.2s; color: #1a1f36; line-height: 1.6;
+  }
+  textarea:focus { outline: none; border-color: var(--blue-accent); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--navy); color: white; }
+  .btn-primary:hover { background: var(--navy-light); }
+  .btn-primary:disabled { background: var(--gray-400); cursor: not-allowed; }
+  .btn-secondary { background: var(--gray-100); color: var(--gray-600); border: 1.5px solid var(--gray-200); }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #237a42; }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* ── Info grid ── */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 700px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-field { display: flex; flex-direction: column; gap: 4px; }
+  .info-field.full-width { grid-column: 1 / -1; }
+  .info-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-600); }
+  .info-value {
+    font-size: 14px; color: #1a1f36; background: var(--gray-100); border-radius: var(--radius-sm);
+    padding: 8px 12px; min-height: 36px; border: 1.5px solid transparent; transition: border-color 0.2s;
+  }
+  .info-value:focus { outline: none; border-color: var(--blue-accent); background: white; }
+  .info-value[contenteditable]:empty:before { content: attr(data-placeholder); color: var(--gray-400); }
+  .info-value.missing { background: var(--red-light); border-color: #f5c6c2; color: var(--red); }
+  .info-value.missing:before { content: "⚠ Missing — "; font-weight: 600; }
+
+  /* ── Missing banner ── */
+  .missing-banner { background: var(--orange-light); border: 1.5px solid #f0c070; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; display: none; }
+  .missing-banner.visible { display: block; }
+  .missing-banner h4 { font-size: 13px; font-weight: 700; color: var(--orange); margin-bottom: 6px; }
+  .missing-banner ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+  .missing-banner ul li { background: var(--orange); color: white; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; }
+
+  /* ── Output boxes ── */
+  .output-box {
+    background: var(--gray-100); border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    padding: 14px 16px; font-size: 14px; line-height: 1.7; min-height: 80px;
+    white-space: pre-wrap; font-family: inherit; color: #1a1f36;
+  }
+  .output-box.editable { cursor: text; }
+  .output-box.editable:focus { outline: 2px solid var(--blue-accent); }
+
+  .char-count { font-size: 11px; color: var(--gray-400); text-align: right; margin-top: 4px; }
+  .char-count.over { color: var(--red); font-weight: 700; }
+
+  /* ── Action row ── */
+  .action-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .copy-feedback { font-size: 12px; color: var(--green); font-weight: 600; opacity: 0; transition: opacity 0.3s; }
+  .copy-feedback.show { opacity: 1; }
+  .section-note { font-size: 12px; color: var(--gray-400); margin-top: 8px; }
+
+  /* ── Search / attendees ── */
+  #notesDropZone.drag-over {
+  background: #e8f4fd;
+  border-color: var(--blue-accent);
+  color: var(--blue-accent);
+}
+#d4hDropZone.drag-over {
+  background: #e8f4fd;
+  border-color: var(--blue-accent);
+  color: var(--blue-accent);
+}
+.attendee-search-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .search-input {
+    flex: 1; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 14px; font-family: inherit; transition: border-color 0.2s;
+  }
+  .search-input:focus { outline: none; border-color: var(--blue-accent); }
+  .search-wrapper { position: relative; flex: 1; }
+  .search-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; background: white;
+    border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg); max-height: 240px; overflow-y: auto; z-index: 50; display: none;
+  }
+  .search-dropdown.open { display: block; }
+  .search-item {
+    padding: 10px 14px; font-size: 14px; cursor: pointer;
+    border-bottom: 1px solid var(--gray-100); display: flex; justify-content: space-between; align-items: center;
+  }
+  .search-item:hover { background: var(--gray-100); }
+  .search-item .member-region { font-size: 11px; color: var(--gray-400); }
+
+  .attendee-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; }
+  .attendee-tag {
+    background: var(--navy); color: white; padding: 6px 12px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;
+  }
+  .attendee-tag .role-badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: 700; }
+  .attendee-tag .remove-btn {
+    background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer;
+    font-size: 16px; line-height: 1; padding: 0; display: flex; align-items: center;
+  }
+  .attendee-tag .remove-btn:hover { color: white; }
+
+  /* ── Day tabs ── */
+  .day-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .day-tab {
+    display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--gray-200);
+    background: var(--gray-100); color: var(--gray-600); transition: all 0.15s;
+  }
+  .day-tab.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .day-tab .day-remove { color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; }
+  .day-tab .day-remove:hover { color: white; }
+  .day-tab-inactive-remove { color: var(--gray-400); font-size: 14px; cursor: pointer; margin-left: 2px; }
+  .day-tab-inactive-remove:hover { color: var(--red); }
+  .add-day-btn {
+    padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    border: 1.5px dashed var(--gray-300); background: none; color: var(--blue-accent); cursor: pointer;
+    transition: all 0.15s;
+  }
+  .add-day-btn:hover { border-color: var(--blue-accent); background: #eef4fb; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── DO row ── */
+  .do-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 700px) { .do-row { grid-template-columns: 1fr; } }
+  .do-field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-600); display: block; margin-bottom: 4px; }
+  .do-field input, .do-field select {
+    width: 100%; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    padding: 8px 12px; font-size: 14px; font-family: inherit;
+  }
+  .do-field input:focus, .do-field select:focus { outline: none; border-color: var(--blue-accent); }
+
+  /* ── Spinner ── */
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 200; display: none; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: var(--radius); padding: 28px; width: 440px; max-width: 90vw; box-shadow: var(--shadow-lg); }
+  .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--navy); }
+  .modal p { font-size: 13px; color: var(--gray-600); margin-bottom: 16px; line-height: 1.5; }
+  .modal input { width: 100%; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 14px; font-family: inherit; margin-bottom: 16px; }
+  .modal input:focus { outline: none; border-color: var(--blue-accent); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  .empty-state { text-align: center; color: var(--gray-400); font-size: 13px; padding: 20px; width: 100%; }
+
+  /* ── Carpool tab styles ── */
+  .carpool-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 700px) { .carpool-form-grid { grid-template-columns: 1fr; } }
+  .carpool-form-grid input, .carpool-form-grid select {
+    border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    padding: 9px 12px; font-size: 14px; font-family: inherit; width: 100%;
+  }
+  .carpool-form-grid input:focus, .carpool-form-grid select:focus { outline: none; border-color: var(--blue-accent); }
+  .carpool-col-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-600); margin-bottom: 4px; display: block; }
+
+  .carpool-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .carpool-columns { grid-template-columns: 1fr; } }
+
+  .carpool-section-header {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.4px; color: var(--navy); margin-bottom: 12px;
+    padding-bottom: 8px; border-bottom: 2px solid var(--gray-200);
+  }
+  .carpool-section-header .badge {
+    background: var(--navy); color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px;
+  }
+
+  .carpool-card {
+    background: var(--gray-100); border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .carpool-card.driver { border-left: 4px solid var(--green); }
+  .carpool-card.rider { border-left: 4px solid var(--blue-accent); }
+  .carpool-card-name { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .carpool-card-detail { font-size: 12px; color: var(--gray-600); line-height: 1.5; }
+  .carpool-card-seats {
+    background: var(--green); color: white; font-size: 11px; font-weight: 700;
+    padding: 3px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;
+  }
+  .carpool-card-seats.full { background: var(--gray-400); }
+
+  .day-selector-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .day-selector-row label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-600); white-space: nowrap; }
+  .day-selector-row select {
+    border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    padding: 7px 12px; font-size: 14px; font-family: inherit;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <img src="calsar-logo.png" class="header-logo" alt="CalSAR Logo" onerror="this.style.display='none'">
+  <div>
+    <div class="header-title">CalSAR Mission Hub</div>
+    <div class="header-subtitle">Duty Officer Dashboard &amp; Team Coordination</div>
+  </div>
+  <div id="briefingCountdown" style="display:none;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:6px 16px;text-align:center;margin-right:12px;min-width:140px">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;opacity:0.7" id="countdownLabel">Briefing In</div>
+    <div style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px" id="countdownTimer">--:--:--</div>
+  </div>
+  <div class="header-spacer"></div>
+  <button class="api-key-btn" onclick="printBriefing()" style="margin-right:8px">🖨 Print Briefing</button>
+  <button class="api-key-btn" id="newMissionBtn" onclick="openNewMissionModal()" style="margin-right:8px;background:rgba(240,165,0,0.35);border-color:rgba(240,165,0,0.6);font-weight:700">🚀 Start New Mission</button>
+  <button class="api-key-btn" id="saveMissionBtn" onclick="saveMission()" style="margin-right:8px;background:rgba(45,138,78,0.3);border-color:rgba(45,138,78,0.5)">💾 Save Snapshot</button>
+  <button class="api-key-btn" id="apiKeyBtn" onclick="openApiModal()">⚙ Configure Groq Key</button>
+</div>
+
+<!-- D4H Create Incident Modal -->
+<div class="modal-overlay" id="d4hIncidentModal">
+  <div class="modal" style="width:560px">
+    <h3>📋 Create Incident in D4H</h3>
+    <div id="d4hTestBadge" style="display:none;background:#f0a500;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:10px;display:inline-block;margin-bottom:12px">🧪 TEST MODE — no data will be sent to D4H</div>
+    <p style="font-size:13px;margin-top:0">Review the incident details below before submitting. You can edit any field.</p>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600)">Incident Title</label>
+    <input type="text" id="d4hIncTitle" autocomplete="off" style="margin-bottom:10px">
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600)">Description</label>
+    <textarea id="d4hIncDescription" rows="4" style="margin-bottom:10px"></textarea>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600)">Date</label>
+        <input type="text" id="d4hIncDate" autocomplete="off">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600)">Reference # (Mission #)</label>
+        <input type="text" id="d4hIncRef" autocomplete="off">
+      </div>
+    </div>
+    <div id="d4hIncidentResult" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('d4hIncidentModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" id="d4hIncidentSubmitBtn" onclick="submitD4HIncident()">📋 Create Incident</button>
+    </div>
+  </div>
+</div>
+
+<!-- D4H Attendance Modal -->
+<div class="modal-overlay" id="d4hAttendanceModal">
+  <div class="modal" style="width:580px">
+    <h3>🔄 Pull Attendance from D4H</h3>
+    <div id="d4hAttTestBadge" style="background:#f0a500;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:10px;display:inline-block;margin-bottom:12px">🧪 TEST MODE — showing mock D4H data</div>
+    <p style="font-size:13px;margin-top:0">Select an incident to pull confirmed attendees from. Only members with a green checkmark (Attending) will be imported.</p>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600);display:block;margin-bottom:6px">Select Incident</label>
+    <select id="d4hIncidentSelect" style="margin-bottom:14px;font-size:13px">
+      <option value="">Loading incidents…</option>
+    </select>
+    <div id="d4hAttendancePreview" style="display:none;max-height:280px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px"></div>
+    <div id="d4hAttResult" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('d4hAttendanceModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-secondary" id="d4hPreviewBtn" onclick="previewD4HAttendance()">👁 Preview Attendees</button>
+      <button class="btn btn-primary" id="d4hImportBtn" onclick="importD4HAttendance()" disabled>✅ Import to Day <span id="d4hImportDayLabel"></span></button>
+    </div>
+  </div>
+</div>
+
+<!-- New Mission Modal -->
+<div class="modal-overlay" id="newMissionModal">
+  <div class="modal" style="width:500px">
+    <h3>🚀 Start New Mission</h3>
+    <p>This creates a shareable link for this mission. Team members who open the link can view mission info and sign up for carpooling — while you work in the DO Dashboard simultaneously.</p>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-600);display:block;margin-bottom:4px">Mission Number (optional — can fill in later)</label>
+    <input type="text" id="newMissionNumberInput" placeholder="e.g. 2026-LAW-30168822" autocomplete="off">
+    <div id="newMissionError" style="color:var(--red);font-size:12px;margin-top:-10px;margin-bottom:12px;display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeNewMissionModal()">Cancel</button>
+      <button class="btn btn-primary" id="createMissionBtn" onclick="createSharedMission()">Create &amp; Get Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mission Status Bar (shown when a shared mission is active) -->
+<div id="missionBar" style="display:none;background:#1a3a2a;color:white;padding:10px 32px;font-size:13px;display:none;align-items:center;gap:16px;flex-wrap:wrap">
+  <span style="font-weight:700;color:#6fcf97">🟢 ACTIVE MISSION:</span>
+  <span id="missionBarLabel" style="font-weight:600"></span>
+  <span style="opacity:0.5">·</span>
+  <span style="opacity:0.8">Share this link with your team:</span>
+  <code id="missionBarUrl" style="background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:6px;font-size:12px;cursor:pointer" onclick="copyMissionBarUrl()" title="Click to copy"></code>
+  <button onclick="copyMissionBarUrl()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600">📋 Copy Link</button>
+  <span id="missionBarCopied" style="color:#6fcf97;font-weight:700;font-size:12px;opacity:0;transition:opacity 0.3s">Copied!</span>
+  <div style="flex:1"></div>
+  <button onclick="endMission()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer">End Mission</button>
+</div>
+
+<!-- Tab Navigation -->
+<div class="tab-nav">
+  <button class="tab-btn active" id="tabBtn-do" onclick="switchTab('do')">📋 DO Dashboard</button>
+  <button class="tab-btn" id="tabBtn-carpool" onclick="switchTab('carpool')">🚗 Carpooling</button>
+  <button class="tab-btn" id="tabBtn-history" onclick="switchTab('history')">📁 Mission History</button>
+</div>
+
+<!-- API Key Modal -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal" style="width:520px">
+    <h3>⚙ API Configuration</h3>
+
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-600);margin-bottom:6px">Groq API Key (AI features)</div>
+    <p style="margin-top:0;font-size:13px">Used to parse mission notes and generate messages. Free key at <strong>console.groq.com</strong> → API Keys.</p>
+    <input type="password" id="apiKeyInput" placeholder="gsk_..." autocomplete="off" style="margin-bottom:16px">
+
+    <div style="border-top:1px solid var(--gray-200);padding-top:16px;margin-bottom:6px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-600);margin-bottom:6px">D4H Integration <span style="background:#f0a500;color:white;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;vertical-align:middle">OPTIONAL</span></div>
+      <p style="margin-top:0;font-size:13px">Enables pulling live attendance and creating incidents directly in D4H. Get your API token from <strong>D4H → Account → API Access</strong>.</p>
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">D4H API Token</label>
+      <input type="password" id="d4hKeyInput" placeholder="Paste D4H API token..." autocomplete="off" style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">D4H Team Subdomain</label>
+      <input type="text" id="d4hTeamInput" placeholder="e.g. calsar (from calsar.d4h.org)" autocomplete="off">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeApiModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TAB 1: DO DASHBOARD
+════════════════════════════════════════════ -->
+<div id="tab-do" class="tab-panel active">
+<div class="main">
+
+  <!-- Step 1 -->
+  <div class="card">
+    <div class="card-header"><div class="step">1</div>Incoming Mission Notes</div>
+    <div class="card-body">
+      <textarea id="missionNotes" rows="8" placeholder="Paste call notes or email content from Cal OES here..."></textarea>
+
+      <!-- Drop zone for files -->
+      <div id="notesDropZone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="event.preventDefault();this.classList.remove('drag-over');handleNotesFileDrop(event)"
+        onclick="document.getElementById('notesFileInput').click()"
+        style="margin-top:8px;border:3px dashed #94a3b8;border-radius:10px;padding:18px 20px;text-align:center;cursor:pointer;color:#475569;font-size:13px;font-weight:600;background:#f8fafc;transition:background 0.15s,border-color 0.15s"
+        title="Drop a screenshot, PDF, or email file to extract mission notes">
+        📎 Drop a screenshot, PDF, or email here to extract mission notes — or click to browse
+        <input type="file" id="notesFileInput" accept="image/*,.pdf,.eml,.msg,.txt" style="display:none" onchange="handleNotesFileInput(this)">
+      </div>
+      <div id="notesFileStatus" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;font-size:13px"></div>
+
+      <div class="action-row">
+        <button class="btn btn-primary" id="parseBtn" onclick="parseMissionNotes()">
+          <span id="parseBtnIcon">🔍</span> Parse Mission Info
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="clearAll()">Clear All</button>
+        <div class="section-note">AI will extract all critical information and flag what's missing</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="card">
+    <div class="card-header"><div class="step">2</div>Critical Information &amp; Missing Fields</div>
+    <div class="card-body">
+      <div class="missing-banner" id="missingBanner">
+        <h4>⚠ Clarify with OES before deployment:</h4>
+        <ul id="missingList"></ul>
+      </div>
+      <div class="info-grid">
+        <div class="info-field">
+          <div class="info-label">Time/Date Message Received</div>
+          <div class="info-value" id="f_received" contenteditable="true" data-placeholder="e.g. 05/21/26 at 1800"></div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Mission Number</div>
+          <div class="info-value" id="f_mission_number" contenteditable="true" data-placeholder="e.g. 2026-LAW-30168822"></div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">ICP Location</div>
+          <div class="info-value" id="f_icp" contenteditable="true" data-placeholder="Address or place name"></div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Operational Period</div>
+          <div class="info-value" id="f_op_period" contenteditable="true" data-placeholder="e.g. 5/23–5/24"></div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Coordinates</div>
+          <div class="info-value" id="f_coordinates" contenteditable="true" data-placeholder="e.g. 36.01757, -116.29453"></div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">CalTopo Map Link</div>
+          <div class="info-value" id="f_caltopo" contenteditable="true" data-placeholder="https://caltopo.com/m/..." oninput="renderCaltopoLink()"></div>
+          <div id="caltopo_link_row" style="display:none;margin-top:4px">
+            <a id="caltopo_link" href="#" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:var(--blue-accent)">🗺 Open CalTopo Map ↗</a>
+          </div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Start Time / Briefing Time</div>
+          <div class="info-value" id="f_start_time" contenteditable="true" data-placeholder="e.g. 0800"></div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Overnight Accommodation</div>
+          <div class="info-value" id="f_accommodation" contenteditable="true" data-placeholder="e.g. Camping at Shoshone RV Park"></div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Resource Request</div>
+          <div class="info-value" id="f_resources" contenteditable="true" data-placeholder="e.g. 20 Type 1 and Type 2 searchers"></div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Point of Contact (POC)</div>
+          <div class="info-value" id="f_poc" contenteditable="true" data-placeholder="Name, phone, agency"></div>
+        </div>
+        <div class="info-field full-width">
+          <div class="info-label">Missing Person Information</div>
+          <div class="info-value" id="f_mp_info" contenteditable="true" data-placeholder="Age, gender, description, last seen, at-risk factors"></div>
+        </div>
+        <div class="info-field full-width">
+          <div class="info-label">Additional Notes</div>
+          <div class="info-value" id="f_additional" contenteditable="true" data-placeholder="Weather, food, transportation, special considerations"></div>
+        </div>
+      </div>
+
+      <!-- D4H Incident Creation -->
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-200);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openD4HIncidentModal()">
+          <span id="d4hIncidentBtnIcon">📋</span> Create Incident in D4H
+        </button>
+        <span id="d4hIncidentStatus" style="font-size:12px;color:var(--gray-500)"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weather Widget -->
+  <div class="card" id="weatherCard" style="display:none">
+    <div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span>🌤 Field Weather Forecast</span>
+      <div style="display:flex;gap:6px;margin-left:auto;align-items:center">
+        <input id="weatherOverrideInput" type="text" placeholder="Override coords, e.g. 36.018, -116.294" autocomplete="off"
+          style="font-size:12px;padding:4px 10px;border:1px solid var(--gray-300);border-radius:6px;width:260px"
+          onkeydown="if(event.key==='Enter')fetchWeatherOverride()">
+        <button class="btn btn-secondary btn-sm" onclick="fetchWeatherOverride()">↺ Refresh</button>
+      </div>
+    </div>
+    <div class="card-body" id="weatherBody" style="padding:12px 20px"></div>
+  </div>
+
+  <!-- Steps 3 & 4 -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><div class="step">3</div>Incident Briefing Summary</div>
+      <div class="card-body">
+        <div class="output-box editable" id="incidentSummary" contenteditable="true" tabindex="0">
+          <span style="color:var(--gray-400)">Parse mission notes above to generate summary...</span>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary btn-sm" onclick="generateSummary()">↺ Regenerate</button>
+          <button class="btn btn-secondary btn-sm" onclick="copyText('incidentSummary','copy3')">📋 Copy</button>
+          <span class="copy-feedback" id="copy3">Copied!</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="step">4</div>Unit Text Message Draft</div>
+      <div class="card-body">
+        <div class="output-box editable" id="textMessage" contenteditable="true" tabindex="0" oninput="updateCharCount()">
+          <span style="color:var(--gray-400)">Text message will appear here after parsing...</span>
+        </div>
+        <div class="char-count" id="charCount">0 / 150 characters</div>
+        <div class="action-row">
+          <button class="btn btn-primary btn-sm" onclick="generateTextMessage()">↺ Regenerate</button>
+          <button class="btn btn-secondary btn-sm" onclick="copyText('textMessage','copy4')">📋 Copy</button>
+          <span class="copy-feedback" id="copy4">Copied!</span>
+        </div>
+        <div class="section-note" style="margin-top:8px">Always ends with "Respond Yes/No via Text OR D4H"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5: Responding Members (multi-day) -->
+  <div class="card">
+    <div class="card-header"><div class="step">5</div>Responding Members</div>
+    <div class="card-body">
+
+      <!-- Duty Officers -->
+      <div style="margin-bottom:20px">
+        <div class="info-label" style="margin-bottom:8px">Duty Officers &amp; Unit Liaison</div>
+        <div class="do-row">
+          <div class="do-field">
+            <label>Unit Liaison</label>
+            <input type="text" id="do_liaison" placeholder="Name + phone" list="memberNames">
+          </div>
+          <div class="do-field">
+            <label>Duty Officer 1</label>
+            <input type="text" id="do_1" placeholder="Name + phone" list="memberNames">
+          </div>
+          <div class="do-field">
+            <label>Duty Officer 2</label>
+            <input type="text" id="do_2" placeholder="Name + phone" list="memberNames">
+          </div>
+        </div>
+        <datalist id="memberNames"></datalist>
+      </div>
+
+      <!-- Day tabs -->
+      <div class="info-label" style="margin-bottom:8px">Confirmed Attendees by Day</div>
+      <div class="day-tabs" id="dayTabs"></div>
+
+      <!-- Per-day search + list -->
+      <div class="attendee-search-row">
+        <div class="search-wrapper">
+          <input type="text" class="search-input" id="memberSearch" placeholder="Search member name..." autocomplete="off"
+            oninput="searchMembers(this.value)" onkeydown="handleSearchKey(event)">
+          <div class="search-dropdown" id="searchDropdown"></div>
+        </div>
+        <button class="btn btn-secondary" onclick="addManualMember()">+ Add Manually</button>
+      </div>
+
+      <!-- D4H live pull -->
+      <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openD4HAttendanceModal()">🔄 Pull Attendance from D4H</button>
+        <span id="d4hPullStatus" style="font-size:12px;color:var(--gray-500)"></span>
+      </div>
+
+      <!-- D4H drop zone -->
+      <div id="d4hDropZone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="event.preventDefault();this.classList.remove('drag-over');handleD4HDrop(event)"
+        onclick="document.getElementById('d4hScreenshotInput').click()"
+        style="margin-top:10px;border:3px dashed #94a3b8;border-radius:10px;padding:18px 20px;text-align:center;cursor:pointer;color:#475569;font-size:13px;font-weight:600;background:#f8fafc;transition:background 0.15s,border-color 0.15s"
+        title="Drop a D4H screenshot here to auto-import attendees">
+        📎 Drop a screenshot, PDF, or email here to extract mission notes — or click to browse
+        <input type="file" id="d4hScreenshotInput" accept="image/*" style="display:none" onchange="importFromD4HScreenshot(this)">
+      </div>
+      <div id="d4hImportStatus" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;font-size:13px"></div>
+      <div class="attendee-list" id="attendeeList"></div>
+    </div>
+  </div>
+
+  <!-- Step 6: OES Email -->
+  <div class="card">
+    <div class="card-header"><div class="step">6</div>Response Email to OES</div>
+    <div class="card-body">
+      <div class="day-selector-row">
+        <label>Generate for:</label>
+        <select id="emailDaySelect" style="min-width:180px">
+          <option value="all">All Days (combined)</option>
+        </select>
+      </div>
+      <div class="action-row" style="margin-top:0; margin-bottom:14px">
+        <button class="btn btn-primary" onclick="generateOESEmail()">✉ Generate Email</button>
+      </div>
+      <div class="output-box editable" id="oesEmail" contenteditable="true" tabindex="0" style="min-height:140px">
+        <span style="color:var(--gray-400)">Add responding members in Step 5, then click Generate Email...</span>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-secondary btn-sm" onclick="copyText('oesEmail','copy6')">📋 Copy</button>
+        <span class="copy-feedback" id="copy6">Copied!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 7: Slack Message -->
+  <div class="card">
+    <div class="card-header"><div class="step">7</div>Slack Dispatch Message</div>
+    <div class="card-body">
+      <div style="margin-bottom:12px">
+        <div class="info-label" style="margin-bottom:8px">Select Day &amp; Additional Details</div>
+        <div class="day-selector-row" style="margin-bottom:12px">
+          <label>Attendees for:</label>
+          <select id="slackDaySelect" style="min-width:180px">
+            <option value="all">All Days (combined)</option>
+          </select>
+        </div>
+        <div class="do-row">
+          <div class="do-field">
+            <label>Weather</label>
+            <input type="text" id="slack_weather" placeholder="e.g. HOT, 90 to 100°F">
+          </div>
+          <div class="do-field">
+            <label>Food Provided</label>
+            <input type="text" id="slack_food" placeholder="e.g. Breakfast, Lunch, Dinner Sat">
+          </div>
+          <div class="do-field">
+            <label>Transportation Notes</label>
+            <input type="text" id="slack_transport" placeholder="e.g. 12-seater van from Orinda at 1100">
+          </div>
+        </div>
+        <div class="do-row" style="margin-top:0">
+          <div class="do-field">
+            <label>Other Notes</label>
+            <input type="text" id="slack_other" placeholder="e.g. Flush toilets and showers available">
+          </div>
+          <div class="do-field" style="grid-column: span 2">
+            <label>CalTopo Map URL (overrides Step 2)</label>
+            <input type="text" id="slack_map" placeholder="https://caltopo.com/m/...">
+          </div>
+        </div>
+      </div>
+      <div class="action-row" style="margin-bottom:14px">
+        <button class="btn btn-primary" onclick="generateSlackMessage()">⚡ Generate Slack Message</button>
+      </div>
+      <div class="output-box editable" id="slackMessage" contenteditable="true" tabindex="0" style="font-family:monospace; font-size:13px; min-height:160px">
+        <span style="color:var(--gray-400)">Slack message will appear here...</span>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-success" onclick="copyText('slackMessage','copy7')">📋 Copy for Slack</button>
+        <span class="copy-feedback" id="copy7">Copied! Paste into Slack.</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /tab-do -->
+
+
+<!-- ═══════════════════════════════════════════
+     TAB 2: CARPOOLING
+════════════════════════════════════════════ -->
+<div id="tab-carpool" class="tab-panel">
+<div class="main">
+
+  <div class="card">
+    <div class="card-header">🚗 Mission Carpooling &amp; Transportation</div>
+    <div class="card-body">
+      <p style="font-size:13px; color:var(--gray-600); margin-bottom:16px">
+        For team members to coordinate rides to the mission. Drivers can post available seats; riders can see who to contact.
+        This information is visible to everyone using the app.
+      </p>
+
+      <!-- Mission info banner (pulled from Step 2) -->
+      <div id="carpoolMissionBanner" style="background:var(--gray-100); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:20px; font-size:13px; color:var(--gray-600)">
+        No active mission loaded — go to the DO Dashboard and parse mission notes first, or add rides below for any upcoming mission.
+      </div>
+
+      <!-- Add driver form -->
+      <div style="background: #f0f4ff; border: 1.5px solid #c8d5f5; border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px;">
+        <div class="info-label" style="margin-bottom:12px">🚗 Post Your Car</div>
+        <div class="carpool-form-grid">
+          <div>
+            <span class="carpool-col-label">Your Name</span>
+            <input type="text" id="cp_name" placeholder="Search or type name..." list="memberNames" autocomplete="off">
+          </div>
+          <div>
+            <span class="carpool-col-label">Day</span>
+            <select id="cp_day"><option value="Day 1">Day 1</option></select>
+          </div>
+          <div>
+            <span class="carpool-col-label">Extra Seats Available</span>
+            <select id="cp_seats">
+              <option value="1">1 seat</option>
+              <option value="2">2 seats</option>
+              <option value="3" selected>3 seats</option>
+              <option value="4">4 seats</option>
+              <option value="5">5 seats</option>
+              <option value="6">6 seats</option>
+              <option value="7">7 seats</option>
+            </select>
+          </div>
+          <div>
+            <span class="carpool-col-label">Departing From (City/Area)</span>
+            <input type="text" id="cp_from" placeholder="e.g. San Francisco, Oakland">
+          </div>
+          <div>
+            <span class="carpool-col-label">Departure to Mission</span>
+            <input type="text" id="cp_time" placeholder="e.g. Fri 5/22 at 1100">
+          </div>
+          <div>
+            <span class="carpool-col-label">Return Departure (Back Home)</span>
+            <input type="text" id="cp_return" placeholder="e.g. Sun 5/24 afternoon">
+          </div>
+          <div>
+            <span class="carpool-col-label">Phone / Contact</span>
+            <input type="text" id="cp_phone" placeholder="e.g. 415-555-1234">
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn-primary" style="width:100%" onclick="addCarpoolEntry()">+ Post My Car</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Driver list (full width) -->
+      <div class="carpool-section-header">
+        🚗 Available Cars
+        <span class="badge" id="driverCount">0</span>
+      </div>
+      <div id="driverList"><div class="empty-state">No cars posted yet. Be the first to post yours above!</div></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /tab-carpool -->
+
+
+<!-- ═══════════════════════════════════════════
+     TAB 3: MISSION HISTORY
+════════════════════════════════════════════ -->
+<div id="tab-history" class="tab-panel">
+<div class="main">
+
+  <div class="card">
+    <div class="card-header">📁 Mission History</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">
+        Saved missions are stored in this browser. Each mission gets a unique shareable URL you can bookmark.
+      </p>
+      <div id="historyList"><div class="empty-state">No saved missions yet. Fill out a mission and click 💾 Save Snapshot.</div></div>
+    </div>
+  </div>
+
+  <!-- Mission detail view -->
+  <div class="card" id="historyDetail" style="display:none">
+    <div class="card-header" id="historyDetailTitle">Mission Detail</div>
+    <div class="card-body">
+      <div class="action-row" style="margin-top:0;margin-bottom:16px">
+        <button class="btn btn-primary btn-sm" onclick="loadMissionIntoApp()">↩ Load into Dashboard</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCurrentHistoryMission()">🗑 Delete</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('historyDetail').style.display='none'">✕ Close</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div class="info-label" style="margin-bottom:8px">Mission Info</div>
+          <div id="hd_fields" style="font-size:13px;line-height:2;color:#1a1f36"></div>
+        </div>
+        <div>
+          <div class="info-label" style="margin-bottom:8px">Attendees by Day</div>
+          <div id="hd_attendees" style="font-size:13px;line-height:1.8;color:#1a1f36"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div class="info-label" style="margin-bottom:6px">Text Message Sent</div>
+          <div class="output-box" id="hd_text" style="font-size:13px"></div>
+        </div>
+        <div>
+          <div class="info-label" style="margin-bottom:6px">OES Email Sent</div>
+          <div class="output-box" id="hd_email" style="font-size:13px"></div>
+        </div>
+        <div>
+          <div class="info-label" style="margin-bottom:6px">Slack Message Sent</div>
+          <div class="output-box" id="hd_slack" style="font-size:13px;font-family:monospace"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /tab-history -->
+
+
+<script>
+// ════════════════════════════════
+// MEMBER DATA
+// ════════════════════════════════
+const MEMBERS = [
+  {name:"Adam Mendonca",ref:"637",position:"",phone:"18605971605",region:"San Francisco / Peninsula"},
+  {name:"Amanda Prasuhn",ref:"702",position:"",phone:"13148093600",region:"East Bay"},
+  {name:"Amy Shing",ref:"703",position:"NP",phone:"18175641224",region:"East Bay"},
+  {name:"Amy Wilson",ref:"704",position:"",phone:"14146407890",region:""},
+  {name:"Andrew Ambrosino",ref:"705",position:"WFR",phone:"17149166483",region:""},
+  {name:"Angela Alvarez",ref:"565",position:"RN",phone:"15103039065",region:"East Bay"},
+  {name:"Angelo Lu",ref:"658",position:"EMT, Type1",phone:"14156509849",region:"San Francisco / Peninsula"},
+  {name:"Anoop Goyal",ref:"706",position:"",phone:"16508040085",region:""},
+  {name:"Arash Vahdat",ref:"707",position:"",phone:"14086008186",region:""},
+  {name:"Ariel Parrish",ref:"659",position:"Board, EMT, Type1",phone:"14159025803",region:"San Francisco / Peninsula"},
+  {name:"Beccy Valentine",ref:"640",position:"WFR, Type1",phone:"14158167519",region:"San Francisco / Peninsula"},
+  {name:"Bob Franklin",ref:"656",position:"MD",phone:"14153077594",region:"San Francisco / Peninsula"},
+  {name:"Bobby Lange",ref:"709",position:"",phone:"16509229502",region:""},
+  {name:"Brian Kinnard",ref:"679",position:"WFR, Type1",phone:"19253218995",region:"East Bay"},
+  {name:"Britt Lauer",ref:"680",position:"WFR",phone:"19257087639",region:""},
+  {name:"Carl Kowalski",ref:"681",position:"",phone:"15108821183",region:"East Bay"},
+  {name:"Carl Russell",ref:"619",position:"",phone:"16174802647",region:"San Francisco / Peninsula"},
+  {name:"Caven Montel",ref:"710",position:"",phone:"13175078659",region:""},
+  {name:"Celine Buehl",ref:"662",position:"EMT",phone:"14158164408",region:"San Francisco / Peninsula"},
+  {name:"Chris Sarantos",ref:"652",position:"WFR, Type1",phone:"18056371067",region:"San Francisco / Peninsula"},
+  {name:"Conrad Chan",ref:"531",position:"WFR",phone:"14152900248",region:"San Francisco / Peninsula"},
+  {name:"Craig Volonoski",ref:"643",position:"Recruiting Director, WFR, Type1",phone:"16502078761",region:"San Francisco / Peninsula"},
+  {name:"Doug Lauer",ref:"711",position:"",phone:"15104955065",region:""},
+  {name:"Ed Fu",ref:"606",position:"Board, WFR, Type1",phone:"16505615537",region:"San Francisco / Peninsula"},
+  {name:"Elizabeth Blackburn",ref:"683",position:"WFR, Type1",phone:"18593510607",region:"East Bay"},
+  {name:"Eric Collier",ref:"602",position:"WFR, Type1",phone:"14083140854",region:"South Bay"},
+  {name:"Erik Joelsson",ref:"644",position:"",phone:"16505154940",region:"East Bay"},
+  {name:"Ewelina Lucow",ref:"586",position:"Type1",phone:"12179797192",region:"South Bay"},
+  {name:"Felipe Chacon",ref:"712",position:"",phone:"19152699791",region:""},
+  {name:"Hannah Bulmer",ref:"684",position:"",phone:"14158750288",region:""},
+  {name:"Helena Wong",ref:"641",position:"EMT, Type1",phone:"15105652213",region:"San Francisco / Peninsula"},
+  {name:"Isabella Rogers",ref:"664",position:"WFR, Type1",phone:"14153179955",region:"San Francisco / Peninsula"},
+  {name:"Jagdish Sonti",ref:"667",position:"",phone:"14088328646",region:"South Bay"},
+  {name:"Jake Heller",ref:"686",position:"",phone:"14157175169",region:"San Francisco / Peninsula"},
+  {name:"Jamie Cai",ref:"687",position:"WFR, Type1",phone:"19088870681",region:"East Bay"},
+  {name:"Jason Alvarez",ref:"624",position:"",phone:"15103035551",region:"East Bay"},
+  {name:"Jason Ng",ref:"713",position:"",phone:"14157287717",region:""},
+  {name:"Jason Porto",ref:"510",position:"WFR, Type1",phone:"13038180419",region:"East Bay"},
+  {name:"Jess Fu",ref:"689",position:"",phone:"19095246418",region:"San Francisco / Peninsula"},
+  {name:"Jesse Scarborough",ref:"690",position:"",phone:"13364561889",region:"San Francisco / Peninsula"},
+  {name:"Joe Inch IV",ref:"612",position:"",phone:"18053380224",region:"South Bay"},
+  {name:"Joe Tarnow",ref:"593",position:"WFR, Type1",phone:"15633490503",region:"San Francisco / Peninsula"},
+  {name:"John Lambert",ref:"714",position:"",phone:"13392043241",region:""},
+  {name:"John Landa",ref:"691",position:"",phone:"16127419583",region:"North Bay"},
+  {name:"Julianna Yun Wei",ref:"670",position:"",phone:"19098967615",region:"San Francisco / Peninsula"},
+  {name:"Kaitlin Marquis",ref:"671",position:"WFR, Type1",phone:"14015289421",region:"San Francisco / Peninsula"},
+  {name:"Keith Murray",ref:"715",position:"",phone:"15108139489",region:"North Bay"},
+  {name:"Kim Le",ref:"584",position:"Board",phone:"16507438260",region:"San Francisco / Peninsula"},
+  {name:"Leticia Rivero",ref:"654",position:"",phone:"12092307294",region:"Central Valley"},
+  {name:"Levis Iton",ref:"655",position:"WFR, NP",phone:"14152974135",region:"East Bay"},
+  {name:"Lorne Sachs",ref:"672",position:"PA, Type1",phone:"15309023149",region:"Central Valley"},
+  {name:"Lucie Huet",ref:"538",position:"WFR, Type1",phone:"15105527957",region:"South Bay"},
+  {name:"Luke Boreczky",ref:"649",position:"Board",phone:"15103838982",region:"East Bay"},
+  {name:"Maravilla Clemens",ref:"716",position:"",phone:"18052760075",region:""},
+  {name:"Max Thompson",ref:"717",position:"",phone:"15734807716",region:"San Francisco / Peninsula"},
+  {name:"Melissa Fardy",ref:"718",position:"",phone:"15103323661",region:""},
+  {name:"Mihir Sathe",ref:"694",position:"",phone:"15106765754",region:""},
+  {name:"Mike Dove",ref:"517",position:"Board",phone:"15103346960",region:"East Bay"},
+  {name:"Mike Lenzi",ref:"635",position:"",phone:"15304006129",region:"Central Valley"},
+  {name:"Nan Boden",ref:"695",position:"EMT",phone:"16268279789",region:"Central Valley"},
+  {name:"Nelson Wu",ref:"696",position:"",phone:"18182817807",region:""},
+  {name:"Nicholas Dal Porto",ref:"719",position:"",phone:"16506190922",region:""},
+  {name:"Nick Waters",ref:"697",position:"",phone:"14083967938",region:"San Francisco / Peninsula"},
+  {name:"Orian Williams",ref:"720",position:"",phone:"14157703307",region:""},
+  {name:"Pavel Antonov",ref:"721",position:"",phone:"17028062609",region:""},
+  {name:"Peter Larson",ref:"722",position:"",phone:"15104108242",region:""},
+  {name:"Pranav Reddy",ref:"698",position:"",phone:"19259180999",region:"East Bay"},
+  {name:"Preston Choenchom",ref:"601",position:"Board, WFR, Type1",phone:"15105094894",region:"East Bay"},
+  {name:"Reyna Hulett",ref:"723",position:"",phone:"16502158795",region:""},
+  {name:"Rick McClure",ref:"650",position:"",phone:"19169957607",region:"Central Valley"},
+  {name:"Ryan Flood",ref:"629",position:"Board, WFR, Type1",phone:"17074948747",region:"North Bay"},
+  {name:"Sarah Stadler",ref:"700",position:"",phone:"15206611140",region:"San Francisco / Peninsula"},
+  {name:"Sean Sall",ref:"653",position:"WFR, Type1",phone:"13176828870",region:"East Bay"},
+  {name:"Seth Hardiman",ref:"536",position:"WFR",phone:"18579192227",region:"San Francisco / Peninsula"},
+  {name:"Skyler Chase",ref:"600",position:"WFR",phone:"19253246237",region:"East Bay"},
+  {name:"Sophie Jin",ref:"724",position:"",phone:"13013183598",region:""},
+  {name:"Stephen Wang",ref:"677",position:"WFR",phone:"14158288801",region:"San Francisco / Peninsula"},
+  {name:"Steve Hale",ref:"631",position:"WFR, Type1",phone:"12066055559",region:"San Francisco / Peninsula"},
+  {name:"Steve Warner",ref:"620",position:"WFR",phone:"15182688230",region:"San Francisco / Peninsula"},
+  {name:"Steven Alfaro",ref:"725",position:"",phone:"18622190680",region:""},
+  {name:"Thistle Adams",ref:"726",position:"",phone:"19093679779",region:""},
+  {name:"Tom Collier",ref:"626",position:"WFR, Type1",phone:"15105415950",region:"East Bay"},
+  {name:"Will Hoang",ref:"633",position:"",phone:"16502690231",region:""},
+  {name:"Will Young",ref:"678",position:"WFR, Type1",phone:"16507993387",region:"San Francisco / Peninsula"},
+  {name:"Andre Chang",ref:"569",position:"",phone:"16692787774",region:"Other"},
+  {name:"Ashlynn Dolcini",ref:"642",position:"Safety Officer, EMT, Type1",phone:"15103352422",region:"San Francisco / Peninsula"},
+  {name:"Bill Lowell",ref:"204",position:"",phone:"14083964368",region:""},
+  {name:"Bob Lowell",ref:"546",position:"",phone:"14156864751",region:"North Bay"},
+  {name:"Cynthia Sass",ref:"589",position:"",phone:"15105570745",region:""},
+  {name:"Daniel Franklin",ref:"605",position:"Clinical Coordinator, EMT",phone:"14088056766",region:"South Bay"},
+  {name:"Ken Buscho",ref:"42",position:"",phone:"14087286542",region:"South Bay"},
+  {name:"Madison Aguirre",ref:"623",position:"WFR, Type1",phone:"19162166027",region:""},
+  {name:"Mylissa Malley",ref:"636",position:"",phone:"14084643525",region:"South Bay"},
+  {name:"Peter Rockwell",ref:"187",position:"",phone:"14156065214",region:"San Francisco / Peninsula"},
+  {name:"Ryan Manka-White",ref:"615",position:"WFR",phone:"12026997128",region:"East Bay"},
+  {name:"Samuel Randall",ref:"651",position:"",phone:"14132305592",region:"San Francisco / Peninsula"},
+  {name:"Sean Taylor",ref:"594",position:"",phone:"12177787371",region:"South Bay"},
+  {name:"Wes Ayers",ref:"483",position:"",phone:"19259986467",region:"East Bay"},
+];
+
+// Populate datalist
+const datalist = document.getElementById('memberNames');
+MEMBERS.forEach(m => {
+  const opt = document.createElement('option');
+  opt.value = m.name;
+  datalist.appendChild(opt);
+});
+
+function formatPhone(p) {
+  if (!p) return '';
+  const d = p.replace(/\D/g,'');
+  if (d.length === 11 && d[0]==='1') return `${d.slice(1,4)}-${d.slice(4,7)}-${d.slice(7)}`;
+  if (d.length === 10) return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
+  return p;
+}
+
+// ════════════════════════════════
+// TABS
+// ════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tabBtn-' + name).classList.add('active');
+  if (name === 'carpool') updateCarpoolMissionBanner();
+}
+
+// ════════════════════════════════
+// API KEY
+// ════════════════════════════════
+let apiKey  = localStorage.getItem('calsar_groq_key') || '';
+let d4hKey  = localStorage.getItem('calsar_d4h_key')  || '';
+let d4hTeam = localStorage.getItem('calsar_d4h_team') || '';
+updateApiKeyBtn();
+
+function openApiModal() {
+  document.getElementById('apiKeyInput').value = apiKey;
+  document.getElementById('d4hKeyInput').value = d4hKey;
+  document.getElementById('d4hTeamInput').value = d4hTeam;
+  document.getElementById('apiModal').classList.add('open');
+}
+function closeApiModal() { document.getElementById('apiModal').classList.remove('open'); }
+function saveApiKey() {
+  apiKey  = document.getElementById('apiKeyInput').value.trim();
+  d4hKey  = document.getElementById('d4hKeyInput').value.trim();
+  d4hTeam = document.getElementById('d4hTeamInput').value.trim();
+  localStorage.setItem('calsar_groq_key', apiKey);
+  localStorage.setItem('calsar_d4h_key',  d4hKey);
+  localStorage.setItem('calsar_d4h_team', d4hTeam);
+  updateApiKeyBtn(); closeApiModal();
+}
+function updateApiKeyBtn() {
+  const btn = document.getElementById('apiKeyBtn');
+  const d4hLive = isD4HLive();
+  if (apiKey && d4hLive) { btn.textContent = '✓ Groq + D4H Configured'; btn.classList.add('configured'); }
+  else if (apiKey)       { btn.textContent = '✓ Groq Key Configured';    btn.classList.add('configured'); }
+  else                   { btn.textContent = '⚙ Configure API Keys';      btn.classList.remove('configured'); }
+}
+
+// ════════════════════════════════
+// GROQ API
+// ════════════════════════════════
+async function callAI(prompt) {
+  if (!apiKey) { openApiModal(); throw new Error('API key required'); }
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 1024, messages: [{role:'user',content:prompt}] })
+  });
+  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `API error ${resp.status}`); }
+  const data = await resp.json();
+  return data.choices[0].message.content;
+}
+
+function handleNotesFileDrop(event) {
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  extractNotesFromFile(file);
+}
+
+function handleNotesFileInput(input) {
+  const file = input.files[0];
+  if (!file) return;
+  extractNotesFromFile(file);
+  input.value = '';
+}
+
+async function extractNotesFromFile(file) {
+  if (!apiKey) { openApiModal(); return; }
+
+  const statusEl = document.getElementById('notesFileStatus');
+  statusEl.style.display = 'block';
+  statusEl.style.background = '#fff8e1';
+  statusEl.style.border = '1px solid #f0c040';
+  statusEl.style.color = '#856404';
+  statusEl.textContent = '🔍 Reading file…';
+
+  try {
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf';
+
+    let extractedText = '';
+
+    if (isImage) {
+      // Vision model for screenshots
+      const base64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = e => res(e.target.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          max_tokens: 2048,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64}` } },
+              { type: 'text', text: 'Transcribe all text visible in this image exactly as written. Include every detail — mission numbers, names, times, locations, coordinates, and any other information. Return only the raw transcribed text, no commentary.' }
+            ]
+          }]
+        })
+      });
+      if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `API error ${resp.status}`); }
+      const data = await resp.json();
+      extractedText = data.choices[0].message.content.trim();
+
+    } else {
+      // Text-based: PDF, .eml, .msg, .txt — read as text
+      extractedText = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = e => res(e.target.result);
+        reader.onerror = rej;
+        reader.readAsText(file);
+      });
+      // Strip excessive whitespace/noise while keeping structure
+      extractedText = extractedText.replace(/\r\n/g, '\n').replace(/\n{4,}/g, '\n\n').trim();
+    }
+
+    if (!extractedText) throw new Error('No text could be extracted from this file');
+
+    // Append to (or replace) the textarea
+    const textarea = document.getElementById('missionNotes');
+    if (textarea.value.trim()) {
+      textarea.value += '\n\n---\n\n' + extractedText;
+    } else {
+      textarea.value = extractedText;
+    }
+
+    statusEl.style.background = '#d4edda';
+    statusEl.style.border = '1px solid #a3d9a5';
+    statusEl.style.color = '#155724';
+    statusEl.textContent = `✅ Text extracted from "${file.name}" — review above then click Parse Mission Info.`;
+    setTimeout(() => { statusEl.style.display = 'none'; }, 8000);
+
+  } catch(e) {
+    statusEl.style.background = '#f8d7da';
+    statusEl.style.border = '1px solid #f5c2c7';
+    statusEl.style.color = '#721c24';
+    statusEl.textContent = '❌ Could not read file: ' + e.message;
+  }
+}
+
+function handleD4HDrop(event) {
+  const file = event.dataTransfer.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  importFromD4HFile(file);
+}
+
+async function importFromD4HScreenshot(input) {
+  const file = input.files[0];
+  if (!file) return;
+  importFromD4HFile(file);
+}
+
+async function importFromD4HFile(file) {
+  if (!apiKey) { openApiModal(); return; }
+
+  const statusEl = document.getElementById('d4hImportStatus');
+  statusEl.style.display = 'block';
+  statusEl.style.background = '#fff8e1';
+  statusEl.style.border = '1px solid #f0c040';
+  statusEl.style.color = '#856404';
+  statusEl.textContent = '🔍 Reading screenshot…';
+
+  try {
+    // Convert image to base64
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = e => res(e.target.result.split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+
+    const mimeType = file.type || 'image/png';
+
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64}` }
+            },
+            {
+              type: 'text',
+              text: 'This is a D4H attendance screenshot. List ONLY the names of people who have a green checkmark indicating they are attending/responded. Return ONLY a JSON array of first+last name strings, e.g. ["Jane Smith","John Doe"]. No other text.'
+            }
+          ]
+        }]
+      })
+    });
+
+    if (!resp.ok) {
+      const e = await resp.json().catch(()=>({}));
+      throw new Error(e.error?.message || `API error ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const raw = data.choices[0].message.content.trim();
+
+    // Parse the JSON array from the response
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Could not parse names from response');
+    const names = JSON.parse(match[0]);
+
+    // Match against member list and add to current day, skip duplicates
+    let added = 0, skipped = 0, notFound = [];
+    const currentAttendees = days[currentDayIdx].attendees;
+
+    names.forEach(name => {
+      const nameLower = name.toLowerCase().trim();
+      // Try to match against the members array
+      const member = MEMBERS.find(m => m.name.toLowerCase() === nameLower)
+        || MEMBERS.find(m => {
+          // fuzzy: all words in the name appear in the member name
+          const words = nameLower.split(/\s+/);
+          const mName = m.name.toLowerCase();
+          return words.every(w => mName.includes(w));
+        });
+
+      if (member) {
+        if (currentAttendees.find(a => a.name === member.name)) {
+          skipped++;
+        } else {
+          currentAttendees.push(member);
+          added++;
+        }
+      } else {
+        // Add as manual if not in member list
+        if (currentAttendees.find(a => a.name.toLowerCase() === nameLower)) {
+          skipped++;
+        } else {
+          currentAttendees.push({ name: name.trim(), ref: 'D4H', position: '', phone: '', region: '' });
+          added++;
+          notFound.push(name);
+        }
+      }
+    });
+
+    renderAttendees();
+
+    let msg = `✅ ${added} member${added!==1?'s':''} added`;
+    if (skipped) msg += `, ${skipped} already in list (skipped)`;
+    if (notFound.length) msg += `. Note: ${notFound.join(', ')} not found in member database — added as manual.`;
+
+    statusEl.style.background = '#d4edda';
+    statusEl.style.border = '1px solid #a3d9a5';
+    statusEl.style.color = '#155724';
+    statusEl.textContent = msg;
+
+    setTimeout(() => { statusEl.style.display = 'none'; }, 8000);
+  } catch(e) {
+    statusEl.style.background = '#f8d7da';
+    statusEl.style.border = '1px solid #f5c2c7';
+    statusEl.style.color = '#721c24';
+    statusEl.textContent = '❌ Import failed: ' + e.message;
+  }
+
+  // Reset file input so the same file can be re-uploaded
+  document.getElementById('d4hScreenshotInput').value = '';
+}
+
+// ════════════════════════════════
+// MULTI-DAY ATTENDEES
+// ════════════════════════════════
+// days = [ { label: 'Day 1 – Sat 5/23', attendees: [{...member}] }, ... ]
+let days = [{ label: 'Day 1', attendees: [] }];
+let currentDayIdx = 0;
+
+function renderDayTabs() {
+  const container = document.getElementById('dayTabs');
+  container.innerHTML = days.map((d, i) => {
+    if (i === currentDayIdx) {
+      return `<div class="day-tab active">
+        <span onclick="editDayLabel(${i})" title="Click to rename" style="cursor:pointer">${d.label}</span>
+        ${days.length > 1 ? `<span class="day-remove" onclick="removeDay(${i})" title="Remove day">×</span>` : ''}
+      </div>`;
+    }
+    return `<div class="day-tab" onclick="switchDay(${i})">
+      ${d.label}
+      ${days.length > 1 ? `<span class="day-tab-inactive-remove" onclick="event.stopPropagation();removeDay(${i})" title="Remove day">×</span>` : ''}
+    </div>`;
+  }).join('') + `<button class="add-day-btn" onclick="addDay()">+ Add Day</button>`;
+
+  updateDaySelectors();
+  renderAttendees();
+}
+
+function switchDay(i) { currentDayIdx = i; renderDayTabs(); }
+
+function addDay() {
+  const label = `Day ${days.length + 1}`;
+  days.push({ label, attendees: [] });
+  currentDayIdx = days.length - 1;
+  renderDayTabs();
+  updateCarpoolDaySelect();
+}
+
+function removeDay(i) {
+  if (days.length === 1) return;
+  if (!confirm(`Remove "${days[i].label}" and all its attendees?`)) return;
+  days.splice(i, 1);
+  if (currentDayIdx >= days.length) currentDayIdx = days.length - 1;
+  renderDayTabs();
+  updateCarpoolDaySelect();
+}
+
+function editDayLabel(i) {
+  const newLabel = prompt('Rename day:', days[i].label);
+  if (newLabel && newLabel.trim()) { days[i].label = newLabel.trim(); renderDayTabs(); updateCarpoolDaySelect(); }
+}
+
+function updateDaySelectors() {
+  ['emailDaySelect','slackDaySelect'].forEach(id => {
+    const sel = document.getElementById(id);
+    const prev = sel.value;
+    sel.innerHTML = '<option value="all">All Days (combined)</option>' +
+      days.map((d,i) => `<option value="${i}">${d.label}</option>`).join('');
+    if (prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
+  });
+}
+
+// ════════════════════════════════
+// ATTENDEE SEARCH + RENDER
+// ════════════════════════════════
+function searchMembers(query) {
+  const dropdown = document.getElementById('searchDropdown');
+  if (!query || query.length < 2) { dropdown.classList.remove('open'); return; }
+  const q = query.toLowerCase();
+  const current = days[currentDayIdx].attendees;
+  const results = MEMBERS.filter(m => m.name.toLowerCase().includes(q) && !current.find(a => a.name === m.name)).slice(0,10);
+  if (!results.length) { dropdown.classList.remove('open'); return; }
+  dropdown.innerHTML = results.map(m => `
+    <div class="search-item" onclick='addMember(${JSON.stringify(m)})'>
+      <span>${m.name}${m.position ? ` <small style="color:var(--gray-400)">(${m.position})</small>` : ''}</span>
+      <span class="member-region">${m.region || ''}</span>
+    </div>`).join('');
+  dropdown.classList.add('open');
+}
+
+function handleSearchKey(e) { if (e.key==='Escape') document.getElementById('searchDropdown').classList.remove('open'); }
+document.addEventListener('click', e => { if (!e.target.closest('.search-wrapper')) document.getElementById('searchDropdown').classList.remove('open'); });
+
+function addMember(member) {
+  if (days[currentDayIdx].attendees.find(a => a.name === member.name)) return;
+  days[currentDayIdx].attendees.push(member);
+  document.getElementById('memberSearch').value = '';
+  document.getElementById('searchDropdown').classList.remove('open');
+  renderAttendees();
+}
+
+function addManualMember() {
+  const name = prompt('Enter member name (First Last):');
+  if (!name || !name.trim()) return;
+  const phone = prompt('Phone number (optional):') || '';
+  const pos = prompt('Type (enter "Type1" if Type 1, leave blank for Type 2):') || '';
+  days[currentDayIdx].attendees.push({ name: name.trim(), ref:'MANUAL', position: pos, phone, region:'' });
+  renderAttendees();
+}
+
+function removeMember(dayIdx, memberIdx) {
+  days[dayIdx].attendees.splice(memberIdx, 1);
+  renderAttendees();
+}
+
+function renderAttendees() {
+  const list = document.getElementById('attendeeList');
+  const attendees = days[currentDayIdx].attendees;
+  if (!attendees.length) {
+    list.innerHTML = '<div class="empty-state">No members added for this day. Search above or add manually.</div>';
+    return;
+  }
+  list.innerHTML = attendees.map((m, i) => {
+    const isT1 = m.position && m.position.includes('Type1');
+    const typeColor = isT1 ? '#2d8a4e' : '#4a7fbd';
+    const typeLabel = isT1 ? 'T1' : 'T2';
+    return `<div class="attendee-tag">
+      ${m.name}
+      <span class="role-badge" style="background:${typeColor}">${typeLabel}</span>
+      <button class="remove-btn" onclick="removeMember(${currentDayIdx},${i})" title="Remove">×</button>
+    </div>`;
+  }).join('');
+}
+
+function getAttendeesForSelection(selValue) {
+  if (selValue === 'all') {
+    const seen = new Set();
+    return days.flatMap(d => d.attendees).filter(a => { if (seen.has(a.name)) return false; seen.add(a.name); return true; });
+  }
+  return days[parseInt(selValue)].attendees;
+}
+
+// ════════════════════════════════
+// PARSE (Step 1 → 2)
+// ════════════════════════════════
+async function parseMissionNotes() {
+  const notes = document.getElementById('missionNotes').value.trim();
+  if (!notes) { alert('Please paste some mission notes first.'); return; }
+  const btn = document.getElementById('parseBtn');
+  const icon = document.getElementById('parseBtnIcon');
+  btn.disabled = true; icon.innerHTML = '<span class="spinner"></span>';
+  try {
+    const prompt = `You are a Search and Rescue duty officer assistant. Extract the following from these mission notes. Return ONLY a valid JSON object with these exact keys. Use null if not found. CRITICAL: Only extract information explicitly stated in the notes. Never infer, assume, or fabricate any details. If something is not clearly stated, return null.
+
+Keys:
+- received: Time/Date message was received
+- mission_number: Mission number (e.g. 2026-LAW-30168822)
+- icp: ICP location (address or place name, not coordinates)
+- coordinates: GPS coordinates (e.g. 36.01757, -116.29453)
+- caltopo: CalTopo map URL if mentioned
+- op_period: Operational period date(s)
+- start_time: Start/briefing time
+- accommodation: Overnight accommodation details
+- resources: Resource request (number and type of searchers)
+- poc: Point of Contact name, phone, agency
+- mp_info: Missing person info as a single plain string. Include ONLY details explicitly stated in the notes — age, gender, description, last seen location, risk factors. Do NOT infer, assume, or fill in anything not directly written. Do NOT return an object or sub-fields.
+- additional: Other important notes (weather, food, special needs)
+- missing_fields: Array of field names that are missing or unclear
+
+Notes:
+${notes}
+
+Return only valid JSON.`;
+
+    const result = await callAI(prompt);
+    let data;
+    try { data = JSON.parse(result.trim()); }
+    catch { const m = result.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); else throw new Error('Could not parse AI response'); }
+
+    const fieldMap = {received:'f_received',mission_number:'f_mission_number',icp:'f_icp',coordinates:'f_coordinates',caltopo:'f_caltopo',op_period:'f_op_period',start_time:'f_start_time',accommodation:'f_accommodation',resources:'f_resources',poc:'f_poc',mp_info:'f_mp_info',additional:'f_additional'};
+    for (const [key, id] of Object.entries(fieldMap)) {
+      const el = document.getElementById(id);
+      let val = data[key];
+      // Safety net: if AI returns an object instead of a string, flatten it
+      if (val && typeof val === 'object') val = Object.values(val).filter(Boolean).join(', ');
+      el.textContent = val || '';
+      el.classList.toggle('missing', !val);
+    }
+
+    const missing = data.missing_fields || [];
+    const banner = document.getElementById('missingBanner');
+    document.getElementById('missingList').innerHTML = missing.map(f => `<li>${f}</li>`).join('');
+    banner.classList.toggle('visible', missing.length > 0);
+
+    // Auto-label Day 1 if op_period is found
+    if (data.op_period && days[0].label === 'Day 1') {
+      days[0].label = `Day 1 – ${data.op_period.split(/[,–\-]/)[0].trim()}`;
+      renderDayTabs();
+      updateCarpoolDaySelect();
+    }
+
+    await generateSummary();
+    await generateTextMessage();
+    updateCarpoolMissionBanner();
+
+    // Auto-trigger weather, countdown, and CalTopo link
+    renderCaltopoLink();
+    if (data.coordinates) fetchWeather(data.coordinates);
+    if (data.start_time) startBriefingCountdown(data.start_time);
+  } catch(err) {
+    alert('Error: ' + err.message);
+  } finally {
+    btn.disabled = false; icon.textContent = '🔍';
+  }
+}
+
+// ════════════════════════════════
+// Step 3: Summary
+// ════════════════════════════════
+async function generateSummary() {
+  const el = document.getElementById('incidentSummary');
+  try {
+    const f = gatherFields();
+    const prompt = `You are a CalSAR duty officer writing a structured incident briefing. Format the output EXACTLY like this template, using only information explicitly provided. Leave a field blank if the info is not available — do not invent or infer details.
+
+What: [2-4 bullet points summarizing the incident background and any key updates. Use past tense for events that occurred. Start each bullet with "•"]
+Request: [what CalSAR was asked to provide]
+Location: [ICP location and coordinates if available]
+When: [operational period / date(s)]
+Time: [briefing time]
+Accommodations: [overnight accommodation details if available]
+POC: [point of contact name and phone]
+Maps: [CalTopo link if available]
+
+Mission details:
+${JSON.stringify(f)}
+
+Return only the formatted text above. No extra commentary.`;
+    el.innerHTML = '<span style="color:var(--gray-400)">Generating...</span>';
+    el.textContent = (await callAI(prompt)).trim();
+  } catch(err) { el.textContent = 'Error: ' + err.message; }
+}
+
+// ════════════════════════════════
+// Step 4: Text Message
+// ════════════════════════════════
+async function generateTextMessage() {
+  const el = document.getElementById('textMessage');
+  try {
+    const prompt = `Generate a unit activation text message for a Search and Rescue team. Must be UNDER 150 characters total.
+The message MUST include: the operational period date(s), the briefing time, and end with exactly "Respond Yes/No via Text OR D4H".
+Format: "!UNIT ACTIVE! [mission#]. [brief MP info]. [op period date(s)], briefing [time], [ICP]. Respond Yes/No via Text OR D4H"
+Mission details: ${JSON.stringify(gatherFields())}
+Return ONLY the message text. Under 150 chars total.`;
+    el.innerHTML = '<span style="color:var(--gray-400)">Generating...</span>';
+    el.textContent = (await callAI(prompt)).trim();
+    updateCharCount();
+  } catch(err) { el.textContent = 'Error: ' + err.message; }
+}
+
+function updateCharCount() {
+  const count = document.getElementById('textMessage').textContent.length;
+  const el = document.getElementById('charCount');
+  el.textContent = `${count} / 150 characters`;
+  el.classList.toggle('over', count > 150);
+}
+
+// ════════════════════════════════
+// Step 6: OES Email
+// ════════════════════════════════
+function generateOESEmail() {
+  const fields = gatherFields();
+  const selVal = document.getElementById('emailDaySelect').value;
+
+  // Determine which attendees + date label to use
+  let attendeeList, dateLabel;
+  if (selVal === 'all') {
+    attendeeList = getAttendeesForSelection('all');
+    dateLabel = fields.op_period || '[date]';
+  } else {
+    const dayObj = days[parseInt(selVal)];
+    attendeeList = dayObj.attendees;
+    // Extract just the date part from day label e.g. "Day 1 – Sat 5/23" → "5/23"
+    const match = dayObj.label.match(/(\d+\/\d+)/);
+    dateLabel = match ? match[1] : dayObj.label;
+  }
+
+  const t1 = attendeeList.filter(a => a.position && a.position.includes('Type1')).length;
+  const t2 = attendeeList.length - t1;
+  const total = attendeeList.length;
+
+  let lines = [];
+  lines.push(`CALSAR has ${total} ready to respond for ${dateLabel}`);
+  if (t1 > 0) lines.push(`${t1} type 1`);
+  if (t2 > 0) lines.push(`${t2} type 2`);
+
+  // If multi-day and showing all, add per-day breakdown
+  if (selVal === 'all' && days.length > 1) {
+    lines.push('');
+    days.forEach(d => {
+      const dt1 = d.attendees.filter(a => a.position && a.position.includes('Type1')).length;
+      const dt2 = d.attendees.length - dt1;
+      const match = d.label.match(/(\d+\/\d+)/);
+      const dl = match ? match[1] : d.label;
+      lines.push(`${d.label}: ${d.attendees.length} total (${dt1} type 1, ${dt2} type 2)`);
+    });
+  }
+
+  document.getElementById('oesEmail').textContent = lines.join('\n');
+}
+
+// ════════════════════════════════
+// Step 7: Slack Message
+// ════════════════════════════════
+function generateSlackMessage() {
+  const fields = gatherFields();
+  const selVal = document.getElementById('slackDaySelect').value;
+  const dayAttendees = getAttendeesForSelection(selVal);
+  const dayLabel = selVal === 'all' ? '' : ` (${days[parseInt(selVal)].label})`;
+
+  const liaison = document.getElementById('do_liaison').value.trim();
+  const do1 = document.getElementById('do_1').value.trim();
+  const do2 = document.getElementById('do_2').value.trim();
+  const weather = document.getElementById('slack_weather').value.trim();
+  const food = document.getElementById('slack_food').value.trim();
+  const transport = document.getElementById('slack_transport').value.trim();
+  const other = document.getElementById('slack_other').value.trim();
+  const mapOverride = document.getElementById('slack_map').value.trim();
+  const mapUrl = mapOverride || fields.caltopo || '';
+
+  const missionNum = fields.mission_number || '[Mission Number]';
+  const opPeriod = fields.op_period || '[Date]';
+
+  let msg = `${missionNum} (${opPeriod}${dayLabel}) operational period:\n`;
+  if (dayAttendees.length) msg += `• *Confirmed attendees:* ${dayAttendees.map(a=>`@${a.name}`).join(' ')}\n`;
+  if (liaison) msg += `• *Unit Liaison:* @${liaison}\n`;
+  const dos = [do1,do2].filter(Boolean);
+  if (dos.length) msg += `• *Duty Officers:* ${dos.map(d=>`@${d}`).join(' ')}\n`;
+  if (fields.start_time) msg += `• *Briefing:* ${fields.start_time} @ ${fields.icp || 'ICP – TBD'}\n`;
+  if (weather) msg += `• *Weather:* ${weather}\n`;
+  msg += `• *Other info:*\n`;
+  if (fields.mp_info) msg += `    ○ ${fields.mp_info}\n`;
+  if (fields.accommodation) msg += `    ○ *Accommodations:* ${fields.accommodation}\n`;
+  if (food) msg += `    ○ *Food:* ${food}\n`;
+  if (other) msg += `    ○ *Other:* ${other}\n`;
+  if (mapUrl) msg += `    ○ *Maps:* ${mapUrl}\n`;
+  if (transport) msg += `    ○ *Transportation:* ${transport}\n`;
+  msg += `• *Reminders:*\n    ○ Text D4H when leaving and arriving, include an ETA.\n`;
+  msg += `\nWe are good to go! You may deploy into the field.`;
+
+  document.getElementById('slackMessage').textContent = msg;
+}
+
+// ════════════════════════════════
+// CARPOOL TAB
+// ════════════════════════════════
+let carpoolEntries = []; // { name, role:'driver'|'rider', day, from, seats, time, phone, claimedBy:[] }
+
+function updateCarpoolDaySelect() {
+  const sel = document.getElementById('cp_day');
+  const prev = sel.value;
+  sel.innerHTML = days.map(d => `<option value="${d.label}">${d.label}</option>`).join('');
+  if (days.find(d=>d.label===prev)) sel.value = prev;
+}
+
+function addCarpoolEntry() {
+  const name   = document.getElementById('cp_name').value.trim();
+  const day    = document.getElementById('cp_day').value;
+  const from   = document.getElementById('cp_from').value.trim();
+  const seats  = parseInt(document.getElementById('cp_seats').value) || 3;
+  const time   = document.getElementById('cp_time').value.trim();
+  const ret    = document.getElementById('cp_return').value.trim();
+  const phone  = document.getElementById('cp_phone').value.trim();
+
+  if (!name) { alert('Please enter your name.'); return; }
+  if (!from)  { alert('Please enter your departure location.'); return; }
+
+  carpoolEntries.push({ name, role: 'driver', day, from, seats, time, returnTime: ret, phone, claimedBy: [] });
+  renderCarpoolEntries();
+  scheduleSync();
+
+  document.getElementById('cp_name').value   = '';
+  document.getElementById('cp_from').value   = '';
+  document.getElementById('cp_time').value   = '';
+  document.getElementById('cp_return').value = '';
+  document.getElementById('cp_phone').value  = '';
+}
+
+function removeCarpoolEntry(i) { carpoolEntries.splice(i,1); renderCarpoolEntries(); scheduleSync(); }
+
+function claimSeat(driverIdx) {
+  const driver = carpoolEntries[driverIdx];
+  const seatsLeft = driver.seats - driver.claimedBy.length;
+  if (seatsLeft <= 0) { alert('No seats left in this car.'); return; }
+  const name = prompt('Enter your name to claim a seat:');
+  if (!name || !name.trim()) return;
+  if (driver.claimedBy.includes(name.trim())) { alert('You already claimed a seat in this car.'); return; }
+  carpoolEntries[driverIdx].claimedBy.push(name.trim());
+  renderCarpoolEntries();
+  scheduleSync();
+}
+
+function unclaimSeat(driverIdx, riderName) {
+  carpoolEntries[driverIdx].claimedBy = carpoolEntries[driverIdx].claimedBy.filter(n => n !== riderName);
+  renderCarpoolEntries();
+  scheduleSync();
+}
+
+function renderDriverCard(e) {
+  const claimed = e.claimedBy || [];
+  const seatsLeft = e.seats - claimed.length;
+  const isFull = seatsLeft <= 0;
+
+  const seatsBadge = isFull
+    ? `<span style="background:#6c757d;color:white;font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px">FULL</span>`
+    : `<span style="background:var(--green);color:white;font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px">${seatsLeft} of ${e.seats} extra seat${e.seats!==1?'s':''} open</span>`;
+
+  const claimBtn = !isFull
+    ? `<button onclick="claimSeat(${e.idx})" style="background:#f0a500;color:white;border:none;border-radius:var(--radius-sm);padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.3px;box-shadow:0 2px 8px rgba(240,165,0,0.4);transition:all 0.2s" onmouseover="this.style.background='#d4920a'" onmouseout="this.style.background='#f0a500'">🙋 Claim a Seat</button>`
+    : `<button disabled style="background:var(--gray-200);color:var(--gray-400);border:none;border-radius:var(--radius-sm);padding:10px 20px;font-size:14px;font-weight:700;cursor:not-allowed">Car Full</button>`;
+
+  const riderTags = claimed.length ? `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-200)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-600);margin-bottom:6px">Claimed Seats</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${claimed.map(n => `
+          <span style="background:#d4edda;color:#155724;font-size:12px;font-weight:600;padding:4px 12px;border-radius:12px;display:flex;align-items:center;gap:6px">
+            ✓ ${n}
+            <span onclick="unclaimSeat(${e.idx},'${n.replace(/'/g,"\\'")}'"
+              style="cursor:pointer;opacity:0.5;font-size:15px;line-height:1" title="Remove">×</span>
+          </span>`).join('')}
+      </div>
+    </div>` : '';
+
+  return `<div class="carpool-card driver" style="flex-direction:column;align-items:stretch;padding:16px 18px;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px">${e.name}</div>
+        <div style="font-size:13px;color:var(--gray-600);line-height:1.8">
+          <div>📍 From: <strong>${e.from}</strong></div>
+          ${e.time ? `<div>🕐 To mission: <strong>${e.time}</strong></div>` : ''}
+          ${e.returnTime ? `<div>🏠 Return home: <strong>${e.returnTime}</strong></div>` : ''}
+          ${e.phone ? `<div><a href="tel:${e.phone}" style="color:var(--blue-accent);font-weight:600;text-decoration:none">📞 ${e.phone}</a></div>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0">
+        ${seatsBadge}
+        ${claimBtn}
+        <button class="btn btn-sm btn-secondary" onclick="removeCarpoolEntry(${e.idx})" style="font-size:11px">Remove</button>
+      </div>
+    </div>
+    ${riderTags}
+  </div>`;
+}
+
+function renderCarpoolEntries() {
+  const drivers = carpoolEntries.map((e,i)=>({...e,idx:i})).filter(e=>e.role==='driver');
+  document.getElementById('driverCount').textContent = drivers.length;
+
+  if (!drivers.length) {
+    document.getElementById('driverList').innerHTML = '<div class="empty-state">No cars posted yet. Be the first to post yours above!</div>';
+    return;
+  }
+
+  // Group by day, preserving day order from the days array
+  const dayOrder = days.map(d => d.label);
+  // Also capture any days in carpool entries not in the days array (e.g. loaded from blob)
+  drivers.forEach(e => { if (!dayOrder.includes(e.day)) dayOrder.push(e.day); });
+
+  const grouped = {};
+  dayOrder.forEach(d => grouped[d] = []);
+  drivers.forEach(e => {
+    if (!grouped[e.day]) grouped[e.day] = [];
+    grouped[e.day].push(e);
+  });
+
+  const activeDays = dayOrder.filter(d => grouped[d].length > 0);
+
+  document.getElementById('driverList').innerHTML = activeDays.map(dayLabel => {
+    const dayDrivers = grouped[dayLabel];
+    const totalSeatsLeft = dayDrivers.reduce((sum,e) => sum + Math.max(0, e.seats - (e.claimedBy||[]).length), 0);
+    const seatSummary = totalSeatsLeft > 0
+      ? `<span style="background:var(--green);color:white;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px;margin-left:10px">${totalSeatsLeft} seat${totalSeatsLeft!==1?'s':''} open</span>`
+      : `<span style="background:#6c757d;color:white;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px;margin-left:10px">All Full</span>`;
+
+    return `
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--navy)">
+          <span style="font-size:14px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px">📅 ${dayLabel}</span>
+          ${seatSummary}
+          <span style="margin-left:8px;font-size:12px;color:var(--gray-400)">${dayDrivers.length} car${dayDrivers.length!==1?'s':''}</span>
+        </div>
+        ${dayDrivers.map(e => renderDriverCard(e)).join('')}
+      </div>`;
+  }).join('');
+}
+
+function updateCarpoolMissionBanner() {
+  const missionNum = document.getElementById('f_mission_number').textContent.trim();
+  const opPeriod = document.getElementById('f_op_period').textContent.trim();
+  const icp = document.getElementById('f_icp').textContent.trim();
+  const banner = document.getElementById('carpoolMissionBanner');
+  if (missionNum) {
+    banner.style.background = '#e8f0fe';
+    banner.style.borderColor = '#a8c0f0';
+    banner.style.color = '#1a2b5e';
+    banner.innerHTML = `<strong>Active Mission:</strong> ${missionNum}${opPeriod ? ` &nbsp;·&nbsp; ${opPeriod}` : ''}${icp ? ` &nbsp;·&nbsp; ${icp}` : ''}`;
+  } else {
+    banner.style.background = '';
+    banner.style.borderColor = '';
+    banner.style.color = '';
+    banner.innerHTML = 'No active mission loaded — go to the DO Dashboard and parse mission notes first, or add rides below for any upcoming mission.';
+  }
+}
+
+// ════════════════════════════════
+// UTILITIES
+// ════════════════════════════════
+function gatherFields() {
+  return {
+    received:     document.getElementById('f_received').textContent.trim(),
+    mission_number: document.getElementById('f_mission_number').textContent.trim(),
+    icp:          document.getElementById('f_icp').textContent.trim(),
+    coordinates:  document.getElementById('f_coordinates').textContent.trim(),
+    caltopo:      document.getElementById('f_caltopo').textContent.trim(),
+    op_period:    document.getElementById('f_op_period').textContent.trim(),
+    start_time:   document.getElementById('f_start_time').textContent.trim(),
+    accommodation:document.getElementById('f_accommodation').textContent.trim(),
+    resources:    document.getElementById('f_resources').textContent.trim(),
+    poc:          document.getElementById('f_poc').textContent.trim(),
+    mp_info:      document.getElementById('f_mp_info').textContent.trim(),
+    additional:   document.getElementById('f_additional').textContent.trim(),
+  };
+}
+
+function copyText(id, feedbackId) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const fb = document.getElementById(feedbackId);
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 2000);
+  });
+}
+
+function clearAll() {
+  if (!confirm('Clear all fields and start over?')) return;
+  document.getElementById('missionNotes').value = '';
+  ['f_received','f_mission_number','f_icp','f_coordinates','f_caltopo','f_op_period','f_start_time','f_accommodation','f_resources','f_poc','f_mp_info','f_additional'].forEach(id => {
+    const el = document.getElementById(id); el.textContent = ''; el.classList.remove('missing');
+  });
+  document.getElementById('missingBanner').classList.remove('visible');
+  document.getElementById('incidentSummary').innerHTML = '<span style="color:var(--gray-400)">Parse mission notes above to generate summary...</span>';
+  document.getElementById('textMessage').innerHTML = '<span style="color:var(--gray-400)">Text message will appear here after parsing...</span>';
+  document.getElementById('oesEmail').innerHTML = '<span style="color:var(--gray-400)">Add responding members in Step 5, then click Generate Email...</span>';
+  document.getElementById('slackMessage').innerHTML = '<span style="color:var(--gray-400)">Slack message will appear here...</span>';
+  days = [{ label: 'Day 1', attendees: [] }]; currentDayIdx = 0;
+  renderDayTabs(); updateCarpoolDaySelect(); renderCarpoolEntries();
+  document.getElementById('do_liaison').value = ''; document.getElementById('do_1').value = ''; document.getElementById('do_2').value = '';
+}
+
+// ════════════════════════════════
+// SHARED MISSION (JSONBlob)
+// ════════════════════════════════
+const JSONBLOB = 'https://jsonblob.com/api/jsonBlob';
+let sharedBlobId = null;
+let syncTimer = null;
+
+function openNewMissionModal() {
+  const existing = document.getElementById('f_mission_number').textContent.trim();
+  document.getElementById('newMissionNumberInput').value = existing;
+  document.getElementById('newMissionError').style.display = 'none';
+  document.getElementById('newMissionModal').classList.add('open');
+}
+function closeNewMissionModal() {
+  document.getElementById('newMissionModal').classList.remove('open');
+}
+
+async function createSharedMission() {
+  const btn = document.getElementById('createMissionBtn');
+  const errEl = document.getElementById('newMissionError');
+  const missionNum = document.getElementById('newMissionNumberInput').value.trim();
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  try {
+    const payload = buildSharedPayload(missionNum);
+    const resp = await fetch(JSONBLOB, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error('Server error ' + resp.status);
+    const loc = resp.headers.get('Location') || '';
+    sharedBlobId = loc.split('/').pop();
+    if (!sharedBlobId) throw new Error('No blob ID returned');
+
+    // Stamp mission number into Step 2 if provided
+    if (missionNum) {
+      const el = document.getElementById('f_mission_number');
+      if (!el.textContent.trim()) el.textContent = missionNum;
+    }
+
+    window.location.hash = 'shared-' + sharedBlobId;
+    closeNewMissionModal();
+    updateMissionBar();
+    updateCarpoolMissionBanner();
+  } catch(e) {
+    errEl.textContent = 'Could not create mission: ' + e.message + '. Check your internet connection.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create & Get Link';
+  }
+}
+
+async function loadSharedMission(blobId) {
+  try {
+    const resp = await fetch(`${JSONBLOB}/${blobId}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (!resp.ok) throw new Error('Mission not found');
+    const data = await resp.json();
+
+    sharedBlobId = blobId;
+    carpoolEntries = data.carpoolEntries || [];
+
+    // Populate basic mission info fields if they're empty
+    const fieldMap = { mission_number:'f_mission_number', op_period:'f_op_period', icp:'f_icp', start_time:'f_start_time', coordinates:'f_coordinates', caltopo:'f_caltopo' };
+    if (data.missionInfo) {
+      for (const [key, elId] of Object.entries(fieldMap)) {
+        const el = document.getElementById(elId);
+        if (!el.textContent.trim() && data.missionInfo[key]) el.textContent = data.missionInfo[key];
+      }
+    }
+
+    // Restore day labels
+    if (data.days && data.days.length) {
+      data.days.forEach((d, i) => {
+        if (days[i]) days[i].label = d.label;
+        else days.push({ label: d.label, attendees: [] });
+      });
+      renderDayTabs();
+      updateCarpoolDaySelect();
+    }
+
+    renderCarpoolEntries();
+    updateMissionBar();
+    updateCarpoolMissionBanner();
+
+    // Switch to carpool tab if user is not the DO (no Groq key)
+    if (!apiKey) switchTab('carpool');
+  } catch(e) {
+    alert('Could not load mission: ' + e.message);
+  }
+}
+
+function buildSharedPayload(missionNumOverride) {
+  const f = gatherFields();
+  return {
+    missionInfo: {
+      mission_number: missionNumOverride || f.mission_number,
+      op_period:      f.op_period,
+      icp:            f.icp,
+      start_time:     f.start_time,
+      coordinates:    f.coordinates,
+      caltopo:        f.caltopo,
+      mp_info:        f.mp_info,
+    },
+    days: days.map(d => ({ label: d.label })),
+    carpoolEntries,
+    lastUpdated: new Date().toISOString()
+  };
+}
+
+function scheduleSync() {
+  if (!sharedBlobId) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushSync, 1200);
+}
+
+async function pushSync() {
+  if (!sharedBlobId) return;
+  try {
+    await fetch(`${JSONBLOB}/${sharedBlobId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify(buildSharedPayload())
+    });
+  } catch(e) { console.warn('Sync failed', e); }
+}
+
+function getSharedUrl() {
+  return window.location.origin + window.location.pathname + '#shared-' + sharedBlobId;
+}
+
+function updateMissionBar() {
+  const bar = document.getElementById('missionBar');
+  if (!sharedBlobId) { bar.style.display = 'none'; return; }
+  const missionNum = document.getElementById('f_mission_number').textContent.trim() || 'Active Mission';
+  document.getElementById('missionBarLabel').textContent = missionNum;
+  document.getElementById('missionBarUrl').textContent = getSharedUrl();
+  bar.style.display = 'flex';
+
+  // Update the new mission button to show it's active
+  const btn = document.getElementById('newMissionBtn');
+  btn.textContent = '🟢 Mission Active';
+  btn.style.background = 'rgba(45,138,78,0.4)';
+  btn.style.borderColor = 'rgba(45,138,78,0.6)';
+  btn.onclick = () => copyMissionBarUrl();
+}
+
+function copyMissionBarUrl() {
+  navigator.clipboard.writeText(getSharedUrl()).then(() => {
+    const el = document.getElementById('missionBarCopied');
+    el.style.opacity = '1';
+    setTimeout(() => el.style.opacity = '0', 2000);
+  });
+}
+
+function endMission() {
+  if (!confirm('End this shared mission? The carpool link will stop syncing.')) return;
+  sharedBlobId = null;
+  window.location.hash = '';
+  document.getElementById('missionBar').style.display = 'none';
+  const btn = document.getElementById('newMissionBtn');
+  btn.textContent = '🚀 Start New Mission';
+  btn.style.background = 'rgba(240,165,0,0.35)';
+  btn.style.borderColor = 'rgba(240,165,0,0.6)';
+  btn.onclick = () => openNewMissionModal();
+}
+
+// ════════════════════════════════
+// MISSION HISTORY — SAVE / LOAD
+// ════════════════════════════════
+const HISTORY_KEY = 'calsar_mission_history';
+
+function getMissionId() {
+  const num = document.getElementById('f_mission_number').textContent.trim();
+  return num ? num.replace(/[^a-zA-Z0-9\-]/g,'') : null;
+}
+
+function saveMission() {
+  const missionId = getMissionId();
+  if (!missionId) { alert('Please parse mission notes and ensure a Mission Number is filled in before saving.'); return; }
+
+  const snapshot = {
+    id: missionId,
+    savedAt: new Date().toISOString(),
+    fields: gatherFields(),
+    days: days.map(d => ({ label: d.label, attendees: d.attendees })),
+    dutyOfficers: {
+      liaison: document.getElementById('do_liaison').value,
+      do1: document.getElementById('do_1').value,
+      do2: document.getElementById('do_2').value,
+    },
+    outputs: {
+      summary: document.getElementById('incidentSummary').textContent,
+      textMessage: document.getElementById('textMessage').textContent,
+      oesEmail: document.getElementById('oesEmail').textContent,
+      slackMessage: document.getElementById('slackMessage').textContent,
+    },
+    carpoolEntries,
+  };
+
+  const history = loadHistory();
+  history[missionId] = snapshot;
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+
+  // Update URL
+  window.location.hash = missionId;
+
+  // Flash feedback
+  const btn = document.getElementById('saveMissionBtn');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Saved!';
+  setTimeout(() => btn.textContent = orig, 2000);
+}
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function renderHistoryList() {
+  const history = loadHistory();
+  const missions = Object.values(history).sort((a,b) => new Date(b.savedAt) - new Date(a.savedAt));
+  const el = document.getElementById('historyList');
+
+  if (!missions.length) {
+    el.innerHTML = '<div class="empty-state">No saved missions yet. Fill out a mission and click 💾 Save Snapshot.</div>';
+    return;
+  }
+
+  el.innerHTML = missions.map(m => {
+    const date = new Date(m.savedAt).toLocaleString();
+    const totalAttendees = m.days ? m.days.reduce((sum,d) => sum + d.attendees.length, 0) : 0;
+    const isActive = window.location.hash === '#' + m.id;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid ${isActive ? 'var(--blue-accent)' : 'var(--gray-200)'};border-radius:var(--radius-sm);margin-bottom:10px;background:${isActive ? '#eef4ff' : 'var(--gray-100)'}">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:var(--navy)">${m.id}</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:3px">
+          ${m.fields.op_period || 'No date'} &nbsp;·&nbsp; ${m.fields.mp_info ? m.fields.mp_info.slice(0,60)+'…' : 'No MP info'} &nbsp;·&nbsp; ${totalAttendees} member${totalAttendees!==1?'s':''}
+        </div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:2px">Saved ${date}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn btn-sm btn-primary" onclick="viewHistoryMission('${m.id}')">View</button>
+        <button class="btn btn-sm btn-secondary" onclick="copyMissionUrl('${m.id}')">🔗 URL</button>
+        <button class="btn btn-sm btn-secondary" onclick="loadMissionById('${m.id}')">↩ Load</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let currentHistoryId = null;
+
+function viewHistoryMission(id) {
+  const history = loadHistory();
+  const m = history[id];
+  if (!m) return;
+  currentHistoryId = id;
+
+  document.getElementById('historyDetailTitle').textContent = `Mission: ${m.id} — saved ${new Date(m.savedAt).toLocaleString()}`;
+
+  // Fields
+  const f = m.fields;
+  document.getElementById('hd_fields').innerHTML = [
+    ['Mission #', f.mission_number],
+    ['Op Period', f.op_period],
+    ['ICP', f.icp],
+    ['Coordinates', f.coordinates],
+    ['Briefing Time', f.start_time],
+    ['Resources', f.resources],
+    ['POC', f.poc],
+    ['MP Info', f.mp_info],
+    ['Accommodation', f.accommodation],
+  ].filter(([,v])=>v).map(([k,v])=>`<div><strong>${k}:</strong> ${v}</div>`).join('');
+
+  // Attendees
+  document.getElementById('hd_attendees').innerHTML = (m.days||[]).map(d => {
+    const t1 = d.attendees.filter(a=>a.position&&a.position.includes('Type1')).length;
+    const t2 = d.attendees.length - t1;
+    return `<div style="margin-bottom:10px">
+      <strong>${d.label}</strong> (${d.attendees.length} total — ${t1} T1, ${t2} T2)<br>
+      <span style="color:var(--gray-600)">${d.attendees.map(a=>a.name).join(', ') || 'None'}</span>
+    </div>`;
+  }).join('');
+
+  // Carpool
+  const cpEntries = m.carpoolEntries || [];
+  const cpDrivers = cpEntries.filter(e => e.role === 'driver');
+  const cpRiders  = cpEntries.filter(e => e.role === 'rider');
+  const cpEl = document.getElementById('hd_attendees');
+  if (cpEntries.length > 0) {
+    let cpHtml = cpEl.innerHTML;
+    cpHtml += `<div style="margin-top:14px"><strong>Carpooling</strong><br>`;
+    if (cpDrivers.length) cpHtml += `<span style="color:var(--green);font-weight:600">Drivers:</span> ${cpDrivers.map(e=>`${e.name} from ${e.from} (${e.seats} seat${e.seats!==1?'s':''}${e.time?', '+e.time:''}${e.phone?', '+e.phone:''})`).join('; ')}<br>`;
+    if (cpRiders.length)  cpHtml += `<span style="color:var(--blue-accent);font-weight:600">Riders:</span> ${cpRiders.map(e=>`${e.name} from ${e.from}${e.phone?', '+e.phone:''}`).join('; ')}`;
+    cpHtml += `</div>`;
+    cpEl.innerHTML = cpHtml;
+  }
+
+  // Outputs
+  document.getElementById('hd_text').textContent   = m.outputs.textMessage || '—';
+  document.getElementById('hd_email').textContent  = m.outputs.oesEmail    || '—';
+  document.getElementById('hd_slack').textContent  = m.outputs.slackMessage|| '—';
+
+  document.getElementById('historyDetail').style.display = 'block';
+  document.getElementById('historyDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function loadMissionById(id) {
+  const history = loadHistory();
+  const m = history[id];
+  if (!m) return;
+  if (!confirm(`Load mission ${id} into the dashboard? This will overwrite your current fields.`)) return;
+
+  // Restore fields
+  const fieldMap = {mission_number:'f_mission_number',received:'f_received',icp:'f_icp',coordinates:'f_coordinates',caltopo:'f_caltopo',op_period:'f_op_period',start_time:'f_start_time',accommodation:'f_accommodation',resources:'f_resources',poc:'f_poc',mp_info:'f_mp_info',additional:'f_additional'};
+  for (const [key, elId] of Object.entries(fieldMap)) {
+    const el = document.getElementById(elId);
+    el.textContent = m.fields[key] || '';
+    el.classList.remove('missing');
+  }
+
+  // Restore days/attendees
+  days = m.days.map(d => ({ label: d.label, attendees: d.attendees }));
+  currentDayIdx = 0;
+
+  // Restore duty officers
+  document.getElementById('do_liaison').value = m.dutyOfficers?.liaison || '';
+  document.getElementById('do_1').value        = m.dutyOfficers?.do1    || '';
+  document.getElementById('do_2').value        = m.dutyOfficers?.do2    || '';
+
+  // Restore outputs
+  document.getElementById('incidentSummary').textContent = m.outputs.summary      || '';
+  document.getElementById('textMessage').textContent     = m.outputs.textMessage   || '';
+  document.getElementById('oesEmail').textContent        = m.outputs.oesEmail      || '';
+  document.getElementById('slackMessage').textContent    = m.outputs.slackMessage  || '';
+
+  carpoolEntries = m.carpoolEntries || [];
+
+  renderDayTabs();
+  updateCarpoolDaySelect();
+  renderCarpoolEntries();
+  updateCharCount();
+  window.location.hash = id;
+  switchTab('do');
+}
+
+function loadMissionIntoApp() { if (currentHistoryId) loadMissionById(currentHistoryId); }
+
+function deleteCurrentHistoryMission() {
+  if (!currentHistoryId) return;
+  if (!confirm(`Delete saved mission ${currentHistoryId}? This cannot be undone.`)) return;
+  const history = loadHistory();
+  delete history[currentHistoryId];
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  currentHistoryId = null;
+  document.getElementById('historyDetail').style.display = 'none';
+  renderHistoryList();
+}
+
+function copyMissionUrl(id) {
+  const url = window.location.origin + window.location.pathname + '#' + id;
+  navigator.clipboard.writeText(url).then(() => alert(`Mission URL copied!\n\n${url}\n\nAnyone on the same device/browser can use this link to jump directly to this mission.`));
+}
+
+// ════════════════════════════════
+// D4H INTEGRATION
+// ════════════════════════════════
+// Realistic mock data mirroring the D4H v3 API response shape
+const D4H_MOCK_INCIDENTS = [
+  { id: 1001, title: '2026-LAW-30168822 – Missing Hiker', reference: '2026-LAW-30168822', date: '2026-06-21T08:00:00Z', status: 'Active' },
+  { id: 1002, title: '2026-MON-99887766 – Lost Backpackers', reference: '2026-MON-99887766', date: '2026-06-15T14:00:00Z', status: 'Closed' },
+  { id: 1003, title: '2026-SCL-11223344 – Overdue Trail Runner', reference: '2026-SCL-11223344', date: '2026-06-10T09:00:00Z', status: 'Closed' },
+];
+
+const D4H_MOCK_ATTENDANCE = {
+  1001: [
+    { id: 1, name: 'Eric Collier',      status: 'Attending', position: 'CO1 - Boots on the Ground' },
+    { id: 2, name: 'Jamie Cai',         status: 'Attending', position: 'CO1 - Boots on the Ground' },
+    { id: 3, name: 'Craig Volonoski',   status: 'Attending', position: 'CO1 - Boots on the Ground' },
+    { id: 4, name: 'Ewelina Lucow',     status: 'Attending', position: 'CO1 - Boots on the Ground' },
+    { id: 5, name: 'Andre Chang',       status: 'Attending', position: 'CO1 - Boots on the Ground' },
+    { id: 6, name: 'Andrew Ambrosino',  status: 'Attending', position: 'CO1 - Boots on the Ground' },
+    { id: 7, name: 'Mike Dove',         status: 'Attending', position: 'CO2 - Team Lead' },
+    { id: 8, name: 'Jason Alvarez',     status: 'Attending', position: 'CO4 - Duty Officer' },
+    { id: 9, name: 'Carl Kowalski',     status: 'Not Attending', position: 'CO1 - Boots on the Ground' },
+    { id: 10, name: 'Max Thompson',     status: 'Pending',   position: 'CO1 - Boots on the Ground' },
+  ],
+  1002: [
+    { id: 1, name: 'Eric Collier',    status: 'Attending', position: 'CO1 - Boots on the Ground' },
+    { id: 2, name: 'Andre Chang',     status: 'Attending', position: 'CO1 - Boots on the Ground' },
+  ],
+  1003: [],
+};
+
+function isD4HLive() { return !!d4hKey && !!d4hTeam; }
+
+async function d4hRequest(path, method = 'GET', body = null) {
+  if (!isD4HLive()) throw new Error('TEST_MODE');
+  const opts = {
+    method,
+    headers: { 'Authorization': `Bearer ${d4hKey}`, 'Content-Type': 'application/json' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch(`https://api.d4h.org/v3/team/${d4hTeam}${path}`, opts);
+  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.message || `D4H error ${resp.status}`); }
+  return resp.json();
+}
+
+// ── Create Incident ──────────────────────────────
+function openD4HIncidentModal() {
+  const f = gatherFields();
+  document.getElementById('d4hIncTitle').value =
+    [f.mission_number, f.mp_info ? f.mp_info.substring(0,60) : ''].filter(Boolean).join(' – ') || 'CalSAR Activation';
+  document.getElementById('d4hIncDescription').value =
+    [f.icp ? `ICP: ${f.icp}` : '', f.coordinates ? `Coords: ${f.coordinates}` : '', f.resources || '', f.mp_info || '', f.additional || '']
+    .filter(Boolean).join('\n');
+  document.getElementById('d4hIncDate').value = f.op_period || new Date().toLocaleDateString();
+  document.getElementById('d4hIncRef').value  = f.mission_number || '';
+
+  const testMode = !isD4HLive();
+  const badge = document.getElementById('d4hTestBadge');
+  badge.style.display = testMode ? 'inline-block' : 'none';
+  document.getElementById('d4hIncidentSubmitBtn').textContent = testMode ? '🧪 Test Submit (no data sent)' : '📋 Create Incident';
+  document.getElementById('d4hIncidentResult').style.display = 'none';
+  document.getElementById('d4hIncidentModal').classList.add('open');
+}
+
+async function submitD4HIncident() {
+  const btn = document.getElementById('d4hIncidentSubmitBtn');
+  const resultEl = document.getElementById('d4hIncidentResult');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+  resultEl.style.display = 'none';
+
+  const payload = {
+    title:       document.getElementById('d4hIncTitle').value.trim(),
+    description: document.getElementById('d4hIncDescription').value.trim(),
+    date:        document.getElementById('d4hIncDate').value.trim(),
+    reference:   document.getElementById('d4hIncRef').value.trim(),
+    status:      'Active'
+  };
+
+  try {
+    let incidentId, message;
+    if (isD4HLive()) {
+      const data = await d4hRequest('/incidents', 'POST', payload);
+      incidentId = data.id || data.data?.id;
+      message = `✅ Incident created in D4H! ID: ${incidentId}`;
+    } else {
+      // Mock: simulate a successful creation
+      await new Promise(r => setTimeout(r, 800));
+      incidentId = 'MOCK-' + Date.now();
+      message = `🧪 TEST MODE: Incident would be created with the payload below. No data was sent to D4H.\n\n${JSON.stringify(payload, null, 2)}`;
+    }
+
+    resultEl.style.background = '#d4edda';
+    resultEl.style.border = '1px solid #a3d9a5';
+    resultEl.style.color = '#155724';
+    resultEl.style.whiteSpace = 'pre-wrap';
+    resultEl.textContent = message;
+    resultEl.style.display = 'block';
+    document.getElementById('d4hIncidentStatus').textContent = isD4HLive()
+      ? `✅ Created (ID: ${incidentId})`
+      : '🧪 Test submit successful';
+  } catch(e) {
+    resultEl.style.background = '#f8d7da';
+    resultEl.style.border = '1px solid #f5c2c7';
+    resultEl.style.color = '#721c24';
+    resultEl.textContent = '❌ ' + e.message;
+    resultEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isD4HLive() ? '📋 Create Incident' : '🧪 Test Submit (no data sent)';
+  }
+}
+
+// ── Pull Attendance ──────────────────────────────
+let d4hFetchedAttendees = [];
+
+async function openD4HAttendanceModal() {
+  d4hFetchedAttendees = [];
+  document.getElementById('d4hAttendancePreview').style.display = 'none';
+  document.getElementById('d4hAttResult').style.display = 'none';
+  document.getElementById('d4hImportBtn').disabled = true;
+  document.getElementById('d4hImportDayLabel').textContent = days[currentDayIdx]?.label || 'Day 1';
+  document.getElementById('d4hAttTestBadge').style.display = isD4HLive() ? 'none' : 'inline-block';
+
+  // Populate incident dropdown
+  const select = document.getElementById('d4hIncidentSelect');
+  select.innerHTML = '<option value="">Loading…</option>';
+  try {
+    let incidents;
+    if (isD4HLive()) {
+      const data = await d4hRequest('/incidents');
+      incidents = data.data || data;
+    } else {
+      await new Promise(r => setTimeout(r, 400));
+      incidents = D4H_MOCK_INCIDENTS;
+    }
+    select.innerHTML = '<option value="">— Select an incident —</option>' +
+      incidents.map(i => `<option value="${i.id}">${i.title} (${i.status})</option>`).join('');
+  } catch(e) {
+    select.innerHTML = `<option value="">Error loading: ${e.message}</option>`;
+  }
+  document.getElementById('d4hAttendanceModal').classList.add('open');
+}
+
+async function previewD4HAttendance() {
+  const incidentId = document.getElementById('d4hIncidentSelect').value;
+  if (!incidentId) { alert('Please select an incident first.'); return; }
+
+  const previewEl = document.getElementById('d4hAttendancePreview');
+  previewEl.style.display = 'block';
+  previewEl.innerHTML = '<span style="color:var(--gray-400)">Loading attendance…</span>';
+  document.getElementById('d4hImportBtn').disabled = true;
+  d4hFetchedAttendees = [];
+
+  try {
+    let attendees;
+    if (isD4HLive()) {
+      const data = await d4hRequest(`/incidents/${incidentId}/members`);
+      attendees = data.data || data;
+    } else {
+      await new Promise(r => setTimeout(r, 600));
+      attendees = D4H_MOCK_ATTENDANCE[incidentId] || [];
+    }
+
+    const attending    = attendees.filter(a => a.status === 'Attending');
+    const notAttending = attendees.filter(a => a.status === 'Not Attending');
+    const pending      = attendees.filter(a => a.status === 'Pending');
+
+    d4hFetchedAttendees = attending;
+
+    const currentNames = new Set(days[currentDayIdx].attendees.map(a => a.name.toLowerCase()));
+
+    const renderRow = (a, icon, color) => {
+      const alreadyIn = currentNames.has(a.name.toLowerCase());
+      return `<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--gray-100)">
+        <span style="color:${color};font-size:14px">${icon}</span>
+        <span style="flex:1;font-size:13px;font-weight:600">${a.name}</span>
+        <span style="font-size:11px;color:var(--gray-500)">${a.position || ''}</span>
+        ${alreadyIn ? `<span style="font-size:10px;font-weight:700;background:#e2e8f0;color:var(--gray-600);padding:2px 7px;border-radius:8px">already added</span>` : ''}
+      </div>`;
+    };
+
+    previewEl.innerHTML = `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600);margin-bottom:6px">
+        ✅ Attending (${attending.length}) — will be imported
+      </div>
+      ${attending.length ? attending.map(a => renderRow(a,'✅','#16a34a')).join('') : '<div style="color:var(--gray-400);font-size:12px">None</div>'}
+      ${notAttending.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600);margin-top:12px;margin-bottom:6px">❌ Not Attending (${notAttending.length})</div>${notAttending.map(a => renderRow(a,'❌','#dc2626')).join('')}` : ''}
+      ${pending.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600);margin-top:12px;margin-bottom:6px">⏳ Pending (${pending.length})</div>${pending.map(a => renderRow(a,'⏳','#f0a500')).join('')}` : ''}
+    `;
+
+    document.getElementById('d4hImportBtn').disabled = attending.length === 0;
+  } catch(e) {
+    previewEl.innerHTML = `<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+}
+
+function importD4HAttendance() {
+  if (!d4hFetchedAttendees.length) return;
+  let added = 0, skipped = 0;
+  const currentAttendees = days[currentDayIdx].attendees;
+
+  d4hFetchedAttendees.forEach(a => {
+    const nameLower = a.name.toLowerCase();
+    const member = MEMBERS.find(m => m.name.toLowerCase() === nameLower)
+      || MEMBERS.find(m => { const w = nameLower.split(/\s+/); return w.every(x => m.name.toLowerCase().includes(x)); });
+
+    if (currentAttendees.find(x => x.name.toLowerCase() === nameLower)) {
+      skipped++;
+    } else if (member) {
+      currentAttendees.push(member); added++;
+    } else {
+      currentAttendees.push({ name: a.name, ref: 'D4H', position: a.position || '', phone: '', region: '' });
+      added++;
+    }
+  });
+
+  renderAttendees();
+
+  const resultEl = document.getElementById('d4hAttResult');
+  resultEl.style.background = '#d4edda';
+  resultEl.style.border = '1px solid #a3d9a5';
+  resultEl.style.color = '#155724';
+  resultEl.textContent = `✅ ${added} member${added!==1?'s':''} imported${skipped ? `, ${skipped} already in list (skipped)` : ''}.`;
+  resultEl.style.display = 'block';
+  document.getElementById('d4hImportBtn').disabled = true;
+
+  document.getElementById('d4hPullStatus').textContent =
+    `Last pull: ${added} added, ${skipped} skipped${isD4HLive() ? '' : ' (test mode)'}`;
+}
+
+// ════════════════════════════════
+// CALTOPO LINK
+// ════════════════════════════════
+function renderCaltopoLink() {
+  const text = document.getElementById('f_caltopo').textContent.trim();
+  const row = document.getElementById('caltopo_link_row');
+  const link = document.getElementById('caltopo_link');
+  const urlMatch = text.match(/https?:\/\/\S+/);
+  if (urlMatch) {
+    link.href = urlMatch[0];
+    row.style.display = 'block';
+  } else {
+    row.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════
+// WEATHER
+// ════════════════════════════════
+async function fetchWeather(coordsText) {
+  // Parse "lat, lon" from various formats
+  const match = coordsText.match(/(-?\d+\.?\d*)[°\s,]+(\d+\.?\d*)?[,\s]+(-?\d+\.?\d*)/);
+  let lat, lon;
+  if (match) {
+    lat = parseFloat(match[1]);
+    lon = parseFloat(match[3]);
+  } else {
+    const simple = coordsText.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+    if (!simple) return;
+    lat = parseFloat(simple[1]);
+    lon = parseFloat(simple[2]);
+  }
+  if (isNaN(lat) || isNaN(lon)) return;
+
+  const card = document.getElementById('weatherCard');
+  const body = document.getElementById('weatherBody');
+  card.style.display = 'block';
+  body.innerHTML = '<span style="color:var(--gray-400)">Fetching forecast…</span>';
+
+  try {
+    const ptResp = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
+    if (!ptResp.ok) throw new Error('Location not supported by NWS (may be outside US)');
+    const ptData = await ptResp.json();
+    const forecastUrl = ptData.properties.forecast;
+    const location = ptData.properties.relativeLocation?.properties;
+
+    const fcResp = await fetch(forecastUrl);
+    if (!fcResp.ok) throw new Error('Could not fetch forecast');
+    const fcData = await fcResp.json();
+    const periods = fcData.properties.periods.slice(0, 6);
+
+    const locationStr = location ? `${location.city}, ${location.state}` : `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+    body.innerHTML = `
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:10px">📍 Forecast for <strong>${locationStr}</strong></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${periods.map(p => `
+          <div style="flex:1;min-width:120px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:10px 12px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--gray-600);margin-bottom:4px">${p.name}</div>
+            <div style="font-size:15px;font-weight:800;margin-bottom:2px">${p.temperature}°${p.temperatureUnit}</div>
+            <div style="font-size:11px;color:var(--gray-600);line-height:1.4">${p.shortForecast}</div>
+            ${p.windSpeed ? `<div style="font-size:11px;color:var(--gray-500);margin-top:4px">💨 ${p.windSpeed} ${p.windDirection}</div>` : ''}
+          </div>`).join('')}
+      </div>`;
+  } catch(e) {
+    body.innerHTML = `<span style="color:var(--red)">⚠ Weather unavailable: ${e.message}</span>`;
+  }
+}
+
+function fetchWeatherOverride() {
+  const val = document.getElementById('weatherOverrideInput').value.trim();
+  if (!val) return;
+  document.getElementById('weatherCard').style.display = 'block';
+  fetchWeather(val);
+}
+
+// ════════════════════════════════
+// BRIEFING COUNTDOWN
+// ════════════════════════════════
+let countdownInterval = null;
+
+function startBriefingCountdown(timeText) {
+  // Parse time like "0800", "08:00", "8:00 AM", "1800 on 6/21" etc.
+  const timeMatch = timeText.match(/(\d{1,2}):?(\d{2})\s*(am|pm)?/i);
+  if (!timeMatch) return;
+
+  let hours = parseInt(timeMatch[1]);
+  const mins = parseInt(timeMatch[2]);
+  const ampm = timeMatch[3]?.toLowerCase();
+  if (ampm === 'pm' && hours < 12) hours += 12;
+  if (ampm === 'am' && hours === 12) hours = 0;
+
+  // Try to extract a date; default to today then tomorrow if time already passed
+  const dateMatch = timeText.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+  const now = new Date();
+  let target = new Date(now);
+  if (dateMatch) {
+    target.setMonth(parseInt(dateMatch[1]) - 1);
+    target.setDate(parseInt(dateMatch[2]));
+    if (dateMatch[3]) {
+      let yr = parseInt(dateMatch[3]);
+      if (yr < 100) yr += 2000;
+      target.setFullYear(yr);
+    }
+  }
+  target.setHours(hours, mins, 0, 0);
+  // If already past today, bump to tomorrow
+  if (target <= now && !dateMatch) target.setDate(target.getDate() + 1);
+
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  const el = document.getElementById('briefingCountdown');
+  const timerEl = document.getElementById('countdownTimer');
+  const labelEl = document.getElementById('countdownLabel');
+  el.style.display = 'block';
+
+  function tick() {
+    const diff = target - new Date();
+    if (diff <= 0) {
+      timerEl.textContent = 'NOW';
+      labelEl.textContent = 'Briefing';
+      el.style.background = 'rgba(220,38,38,0.3)';
+      clearInterval(countdownInterval);
+      return;
+    }
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    timerEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    labelEl.textContent = diff < 3600000 ? '⚠ Briefing In' : 'Briefing In';
+    el.style.background = diff < 1800000 ? 'rgba(220,38,38,0.3)' : 'rgba(255,255,255,0.12)';
+  }
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+
+// ════════════════════════════════
+// PRINT BRIEFING
+// ════════════════════════════════
+function printBriefing() {
+  const f = gatherFields();
+  const allAttendees = getAttendeesForSelection('all');
+  const t1 = allAttendees.filter(a => a.position?.includes('Type1')).length;
+  const t2 = allAttendees.length - t1;
+
+  const daysHtml = days.map(d => {
+    if (!d.attendees.length) return '';
+    return `<div style="margin-bottom:12px">
+      <div style="font-weight:700;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:6px">${d.label}</div>
+      <div style="columns:2;gap:16px">${d.attendees.map(a =>
+        `<div style="font-size:12px;padding:2px 0">${a.name}${a.position?.includes('Type1') ? ' <span style="background:#1e40af;color:white;font-size:10px;padding:1px 5px;border-radius:3px">T1</span>' : ''}</div>`
+      ).join('')}</div>
+    </div>`;
+  }).join('');
+
+  const carpoolHtml = carpoolEntries.filter(e => e.role === 'driver').map(e => {
+    const claimed = (e.claimedBy || []).join(', ') || '—';
+    return `<tr><td>${e.name}</td><td>${e.day}</td><td>${e.from}</td><td>${e.time||'—'}</td><td>${e.returnTime||'—'}</td><td>${e.seats}</td><td>${claimed}</td></tr>`;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>CalSAR Mission Briefing</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #111; margin: 24px; }
+    h1 { font-size: 20px; margin: 0 0 4px 0; }
+    .subtitle { color: #555; font-size: 12px; margin-bottom: 16px; }
+    .section { margin-bottom: 18px; }
+    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #1e3a5f; border-bottom: 2px solid #1e3a5f; padding-bottom: 3px; margin-bottom: 8px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
+    .field label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #666; }
+    .field div { font-size: 13px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { background: #1e3a5f; color: white; padding: 5px 8px; text-align: left; font-size: 11px; }
+    td { padding: 4px 8px; border-bottom: 1px solid #ddd; }
+    .badge { background: #1e40af; color: white; font-size: 10px; padding: 1px 5px; border-radius: 3px; }
+    @media print { body { margin: 12px; } }
+  </style></head><body>
+  <h1>🔴 CalSAR Mission Briefing</h1>
+  <div class="subtitle">Printed ${new Date().toLocaleString()}</div>
+
+  <div class="section">
+    <div class="section-title">Mission Info</div>
+    <div class="grid">
+      <div class="field"><label>Mission #</label><div>${f.mission_number||'—'}</div></div>
+      <div class="field"><label>Op Period</label><div>${f.op_period||'—'}</div></div>
+      <div class="field"><label>ICP Location</label><div>${f.icp||'—'}</div></div>
+      <div class="field"><label>Briefing Time</label><div>${f.start_time||'—'}</div></div>
+      <div class="field"><label>Coordinates</label><div>${f.coordinates||'—'}</div></div>
+      <div class="field"><label>CalTopo</label><div>${f.caltopo||'—'}</div></div>
+      <div class="field"><label>POC</label><div>${f.poc||'—'}</div></div>
+      <div class="field"><label>Resources</label><div>${f.resources||'—'}</div></div>
+      <div class="field" style="grid-column:1/-1"><label>MP Info</label><div>${f.mp_info||'—'}</div></div>
+      <div class="field" style="grid-column:1/-1"><label>Additional Notes</label><div>${f.additional||'—'}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Responding Members — ${allAttendees.length} total (${t1} T1 / ${t2} T2)</div>
+    ${daysHtml || '<div style="color:#888">No members added</div>'}
+  </div>
+
+  ${carpoolHtml ? `<div class="section">
+    <div class="section-title">Carpooling</div>
+    <table><thead><tr><th>Driver</th><th>Day</th><th>From</th><th>Depart</th><th>Return</th><th>Seats</th><th>Claimed By</th></tr></thead>
+    <tbody>${carpoolHtml}</tbody></table>
+  </div>` : ''}
+
+  <script>window.onload = () => { window.print(); }<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ════════════════════════════════
+// INIT
+// ════════════════════════════════
+renderDayTabs();
+updateCarpoolDaySelect();
+renderCarpoolEntries();
+
+// Load from URL hash on startup
+(function() {
+  const hash = window.location.hash.replace('#','');
+  if (hash.startsWith('shared-')) {
+    const blobId = hash.replace('shared-','');
+    loadSharedMission(blobId);
+  } else if (hash) {
+    const history = loadHistory();
+    if (history[hash]) setTimeout(() => loadMissionById(hash), 100);
+  }
+})();
+
+// Re-render history list whenever that tab is opened
+const _origSwitchTab = switchTab;
+window.switchTab = function(name) {
+  _origSwitchTab(name);
+  if (name === 'history') renderHistoryList();
+};
+
+</script>
+</body>
+</html>
