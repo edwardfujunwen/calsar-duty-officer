@@ -454,23 +454,23 @@
       <div class="info-grid">
         <div class="info-field">
           <div class="info-label">Time/Date Message Received</div>
-          <div class="info-value" id="f_received" contenteditable="true" data-placeholder="e.g. 05/21/26 at 1800"></div>
+          <div class="info-value" id="f_received" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 05/21/26 at 1800"></div>
         </div>
         <div class="info-field">
           <div class="info-label">Mission Number</div>
-          <div class="info-value" id="f_mission_number" contenteditable="true" data-placeholder="e.g. 2026-LAW-30168822"></div>
+          <div class="info-value" id="f_mission_number" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 2026-LAW-30168822"></div>
         </div>
         <div class="info-field">
           <div class="info-label">ICP Location</div>
-          <div class="info-value" id="f_icp" contenteditable="true" data-placeholder="Address or place name"></div>
+          <div class="info-value" id="f_icp" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="Address or place name"></div>
         </div>
         <div class="info-field">
           <div class="info-label">Operational Period</div>
-          <div class="info-value" id="f_op_period" contenteditable="true" data-placeholder="e.g. 5/23–5/24"></div>
+          <div class="info-value" id="f_op_period" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 5/23–5/24"></div>
         </div>
         <div class="info-field">
           <div class="info-label">Coordinates</div>
-          <div class="info-value" id="f_coordinates" contenteditable="true" data-placeholder="e.g. 36.01757, -116.29453"></div>
+          <div class="info-value" id="f_coordinates" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 36.01757, -116.29453"></div>
         </div>
         <div class="info-field">
           <div class="info-label">CalTopo Map Link</div>
@@ -481,27 +481,27 @@
         </div>
         <div class="info-field">
           <div class="info-label">Start Time / Briefing Time</div>
-          <div class="info-value" id="f_start_time" contenteditable="true" data-placeholder="e.g. 0800"></div>
+          <div class="info-value" id="f_start_time" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 0800"></div>
         </div>
         <div class="info-field">
           <div class="info-label">Overnight Accommodation</div>
-          <div class="info-value" id="f_accommodation" contenteditable="true" data-placeholder="e.g. Camping at Shoshone RV Park"></div>
+          <div class="info-value" id="f_accommodation" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. Camping at Shoshone RV Park"></div>
         </div>
         <div class="info-field">
           <div class="info-label">Resource Request</div>
-          <div class="info-value" id="f_resources" contenteditable="true" data-placeholder="e.g. 20 Type 1 and Type 2 searchers"></div>
+          <div class="info-value" id="f_resources" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 20 Type 1 and Type 2 searchers"></div>
         </div>
         <div class="info-field">
           <div class="info-label">Point of Contact (POC)</div>
-          <div class="info-value" id="f_poc" contenteditable="true" data-placeholder="Name, phone, agency"></div>
+          <div class="info-value" id="f_poc" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="Name, phone, agency"></div>
         </div>
         <div class="info-field full-width">
           <div class="info-label">Missing Person Information</div>
-          <div class="info-value" id="f_mp_info" contenteditable="true" data-placeholder="Age, gender, description, last seen, at-risk factors"></div>
+          <div class="info-value" id="f_mp_info" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="Age, gender, description, last seen, at-risk factors"></div>
         </div>
         <div class="info-field full-width">
           <div class="info-label">Additional Notes</div>
-          <div class="info-value" id="f_additional" contenteditable="true" data-placeholder="Weather, food, transportation, special considerations"></div>
+          <div class="info-value" id="f_additional" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="Weather, food, transportation, special considerations"></div>
         </div>
       </div>
 
@@ -573,15 +573,15 @@
         <div class="do-row">
           <div class="do-field">
             <label>Unit Liaison</label>
-            <input type="text" id="do_liaison" placeholder="Name + phone" list="memberNames">
+            <input type="text" id="do_liaison" oninput="scheduleMissionPush()" placeholder="Name + phone" list="memberNames">
           </div>
           <div class="do-field">
             <label>Duty Officer 1</label>
-            <input type="text" id="do_1" placeholder="Name + phone" list="memberNames">
+            <input type="text" id="do_1" oninput="scheduleMissionPush()" placeholder="Name + phone" list="memberNames">
           </div>
           <div class="do-field">
             <label>Duty Officer 2</label>
-            <input type="text" id="do_2" placeholder="Name + phone" list="memberNames">
+            <input type="text" id="do_2" oninput="scheduleMissionPush()" placeholder="Name + phone" list="memberNames">
           </div>
         </div>
         <datalist id="memberNames"></datalist>
@@ -1214,6 +1214,7 @@ async function importFromD4HFile(file) {
     });
 
     renderAttendees();
+    scheduleMissionPush();
 
     let msg = `✅ ${added} member${added!==1?'s':''} added`;
     if (skipped) msg += `, ${skipped} already in list (skipped)`;
@@ -1323,6 +1324,7 @@ function addMember(member) {
   document.getElementById('memberSearch').value = '';
   document.getElementById('searchDropdown').classList.remove('open');
   renderAttendees();
+  scheduleMissionPush();
 }
 
 function addManualMember() {
@@ -1332,11 +1334,13 @@ function addManualMember() {
   const pos = prompt('Type (enter "Type1" if Type 1, leave blank for Type 2):') || '';
   days[currentDayIdx].attendees.push({ name: name.trim(), ref:'MANUAL', position: pos, phone, region:'' });
   renderAttendees();
+  scheduleMissionPush();
 }
 
 function removeMember(dayIdx, memberIdx) {
   days[dayIdx].attendees.splice(memberIdx, 1);
   renderAttendees();
+  scheduleMissionPush();
 }
 
 function renderAttendees() {
@@ -1464,6 +1468,7 @@ ${JSON.stringify(f)}
 Return only the formatted text above. No extra commentary.`;
     el.innerHTML = '<span style="color:var(--gray-400)">Generating...</span>';
     el.textContent = (await callAI(prompt)).trim();
+    scheduleMissionPush();
   } catch(err) { el.textContent = 'Error: ' + err.message; }
 }
 
@@ -1481,6 +1486,7 @@ Return ONLY the message text. Under 150 chars total.`;
     el.innerHTML = '<span style="color:var(--gray-400)">Generating...</span>';
     el.textContent = (await callAI(prompt)).trim();
     updateCharCount();
+    scheduleMissionPush();
   } catch(err) { el.textContent = 'Error: ' + err.message; }
 }
 
@@ -1533,6 +1539,7 @@ function generateOESEmail() {
   }
 
   document.getElementById('oesEmail').textContent = lines.join('\n');
+  scheduleMissionPush();
 }
 
 // ════════════════════════════════
@@ -1575,6 +1582,7 @@ function generateSlackMessage() {
   msg += `\nWe are good to go! You may deploy into the field.`;
 
   document.getElementById('slackMessage').textContent = msg;
+  scheduleMissionPush();
 }
 
 // ════════════════════════════════
@@ -1848,37 +1856,73 @@ async function createSharedMission() {
 
 async function loadSharedMission(blobId) {
   try {
-    const resp = await fetch(`${JSONBLOB}/${blobId}`, {
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    if (!resp.ok) throw new Error('Mission not found');
-    const data = await resp.json();
-
     sharedBlobId = blobId;
-    carpoolEntries = data.carpoolEntries || [];
 
-    // Start Firebase real-time carpool sync
-    initFirebaseCarpool(blobId);
+    // Try Firebase first (full state), fall back to jsonblob
+    const fbSnap = await fbDb.ref(`missions/${blobId}/state`).once('value');
+    const fbState = fbSnap.val();
 
-    // Populate basic mission info fields if they're empty
-    const fieldMap = { mission_number:'f_mission_number', op_period:'f_op_period', icp:'f_icp', start_time:'f_start_time', coordinates:'f_coordinates', caltopo:'f_caltopo' };
-    if (data.missionInfo) {
-      for (const [key, elId] of Object.entries(fieldMap)) {
-        const el = document.getElementById(elId);
-        if (!el.textContent.trim() && data.missionInfo[key]) el.textContent = data.missionInfo[key];
-      }
+    let data;
+    if (fbState) {
+      data = fbState;
+    } else {
+      const resp = await fetch(`${JSONBLOB}/${blobId}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!resp.ok) throw new Error('Mission not found');
+      data = await resp.json();
+      // Normalize legacy format
+      if (data.missionInfo) data.fields = data.missionInfo;
     }
 
-    // Restore day labels
+    // Restore all Step 2 fields
+    const fieldMap = {
+      received:'f_received', mission_number:'f_mission_number', icp:'f_icp',
+      op_period:'f_op_period', coordinates:'f_coordinates', caltopo:'f_caltopo',
+      start_time:'f_start_time', accommodation:'f_accommodation', resources:'f_resources',
+      poc:'f_poc', mp_info:'f_mp_info', additional:'f_additional'
+    };
+    if (data.fields) {
+      for (const [key, elId] of Object.entries(fieldMap)) {
+        const el = document.getElementById(elId);
+        if (data.fields[key]) el.textContent = data.fields[key];
+      }
+      renderCaltopoLink();
+      if (data.fields.coordinates) fetchWeather(data.fields.coordinates);
+      if (data.fields.start_time) startBriefingCountdown(data.fields.start_time);
+    }
+
+    // Restore DO fields
+    if (data.doFields) {
+      if (data.doFields.liaison) document.getElementById('do_liaison').value = data.doFields.liaison;
+      if (data.doFields.do1)     document.getElementById('do_1').value = data.doFields.do1;
+      if (data.doFields.do2)     document.getElementById('do_2').value = data.doFields.do2;
+    }
+
+    // Restore days + attendees
     if (data.days && data.days.length) {
-      data.days.forEach((d, i) => {
-        if (days[i]) days[i].label = d.label;
-        else days.push({ label: d.label, attendees: [] });
-      });
+      days = data.days.map(d => ({ label: d.label, attendees: d.attendees || [] }));
       renderDayTabs();
       updateCarpoolDaySelect();
     }
 
+    // Restore carpool
+    carpoolEntries = data.carpoolEntries || [];
+
+    // Restore generated content
+    if (data.generated) {
+      const g = data.generated;
+      if (g.summary)      document.getElementById('incidentSummary').textContent = g.summary;
+      if (g.textMessage)  document.getElementById('textMessage').textContent = g.textMessage;
+      if (g.oesEmail)     document.getElementById('oesEmail').textContent = g.oesEmail;
+      if (g.slackMessage) document.getElementById('slackMessage').textContent = g.slackMessage;
+      if (g.textMessage)  updateCharCount();
+    }
+
+    // Start Firebase real-time carpool sync
+    initFirebaseCarpool(blobId);
+
+    renderAttendees();
     renderCarpoolEntries();
     updateMissionBar();
     updateCarpoolMissionBanner();
@@ -1890,28 +1934,67 @@ async function loadSharedMission(blobId) {
   }
 }
 
-function buildSharedPayload(missionNumOverride) {
+function buildFullMissionState(missionNumOverride) {
   const f = gatherFields();
   return {
-    missionInfo: {
+    fields: {
+      received:      f.received,
       mission_number: missionNumOverride || f.mission_number,
-      op_period:      f.op_period,
-      icp:            f.icp,
-      start_time:     f.start_time,
-      coordinates:    f.coordinates,
-      caltopo:        f.caltopo,
-      mp_info:        f.mp_info,
+      icp:           f.icp,
+      op_period:     f.op_period,
+      coordinates:   f.coordinates,
+      caltopo:       f.caltopo,
+      start_time:    f.start_time,
+      accommodation: f.accommodation,
+      resources:     f.resources,
+      poc:           f.poc,
+      mp_info:       f.mp_info,
+      additional:    f.additional,
     },
-    days: days.map(d => ({ label: d.label })),
+    doFields: {
+      liaison: document.getElementById('do_liaison').value,
+      do1:     document.getElementById('do_1').value,
+      do2:     document.getElementById('do_2').value,
+    },
+    days: days.map(d => ({ label: d.label, attendees: d.attendees })),
     carpoolEntries,
+    generated: {
+      summary:      document.getElementById('incidentSummary')?.textContent?.trim(),
+      textMessage:  document.getElementById('textMessage')?.textContent?.trim(),
+      oesEmail:     document.getElementById('oesEmail')?.textContent?.trim(),
+      slackMessage: document.getElementById('slackMessage')?.textContent?.trim(),
+    },
     lastUpdated: new Date().toISOString()
   };
+}
+
+// Keep buildSharedPayload for jsonblob compat
+function buildSharedPayload(missionNumOverride) {
+  const state = buildFullMissionState(missionNumOverride);
+  return { missionInfo: state.fields, days: state.days.map(d=>({label:d.label})), carpoolEntries, lastUpdated: state.lastUpdated };
+}
+
+let fbMissionRef = null;
+let fbPushTimer = null;
+
+function scheduleMissionPush() {
+  if (!sharedBlobId) return;
+  clearTimeout(fbPushTimer);
+  fbPushTimer = setTimeout(pushFullMissionToFirebase, 1500);
+}
+
+function pushFullMissionToFirebase() {
+  if (!sharedBlobId) return;
+  const state = buildFullMissionState();
+  fbDb.ref(`missions/${sharedBlobId}/state`).set(state)
+    .catch(e => console.warn('Firebase full push failed:', e));
 }
 
 function scheduleSync() {
   if (!sharedBlobId) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(pushSync, 1200);
+  scheduleMissionPush();
 }
 
 async function pushSync() {
