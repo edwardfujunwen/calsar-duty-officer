@@ -1821,19 +1821,9 @@ async function createSharedMission() {
   btn.textContent = 'Creating…';
 
   try {
-    const payload = buildSharedPayload(missionNum);
-    const resp = await fetch(JSONBLOB, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-      body: JSON.stringify(payload)
-    });
-    if (!resp.ok) throw new Error('Server error ' + resp.status);
-    const loc = resp.headers.get('Location') || '';
-    sharedBlobId = loc.split('/').pop();
-    if (!sharedBlobId) throw new Error('No blob ID returned');
-
-    // Start Firebase real-time carpool sync for this mission
-    initFirebaseCarpool(sharedBlobId);
+    // Generate a unique mission ID using Firebase push key (no external API needed)
+    const newRef = fbDb.ref('missions').push();
+    sharedBlobId = newRef.key;
 
     // Stamp mission number into Step 2 if provided
     if (missionNum) {
@@ -1841,12 +1831,18 @@ async function createSharedMission() {
       if (!el.textContent.trim()) el.textContent = missionNum;
     }
 
+    // Save full state to Firebase immediately
+    pushFullMissionToFirebase();
+
+    // Start Firebase real-time sync
+    initFirebaseCarpool(sharedBlobId);
+
     window.location.hash = 'shared-' + sharedBlobId;
     closeNewMissionModal();
     updateMissionBar();
     updateCarpoolMissionBanner();
   } catch(e) {
-    errEl.textContent = 'Could not create mission: ' + e.message + '. Check your internet connection.';
+    errEl.textContent = 'Could not create mission: ' + e.message;
     errEl.style.display = 'block';
   } finally {
     btn.disabled = false;
@@ -1998,14 +1994,7 @@ function scheduleSync() {
 }
 
 async function pushSync() {
-  if (!sharedBlobId) return;
-  try {
-    await fetch(`${JSONBLOB}/${sharedBlobId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-      body: JSON.stringify(buildSharedPayload())
-    });
-  } catch(e) { console.warn('Sync failed', e); }
+  // No-op: Firebase handles all syncing now
 }
 
 function getSharedUrl() {
