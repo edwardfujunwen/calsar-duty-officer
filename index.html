@@ -1954,10 +1954,12 @@ function copyMissionBarUrl() {
 }
 
 function endMission() {
-  if (!confirm('End this shared mission? The carpool link will stop syncing.')) return;
+  if (!confirm('End this mission? A snapshot will be saved to Mission History and the carpool link will stop syncing.')) return;
+  saveMission(); // auto-save before closing out
   sharedBlobId = null;
   window.location.hash = '';
   document.getElementById('missionBar').style.display = 'none';
+  if (fbCarpoolRef) { fbCarpoolRef.off('value'); fbCarpoolRef = null; }
   const btn = document.getElementById('newMissionBtn');
   btn.textContent = '🚀 Start New Mission';
   btn.style.background = 'rgba(240,165,0,0.35)';
