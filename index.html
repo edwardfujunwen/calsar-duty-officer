@@ -707,7 +707,10 @@
 <div class="main">
 
   <div class="card">
-    <div class="card-header">🚗 Mission Carpooling &amp; Transportation</div>
+    <div class="card-header" style="display:flex;align-items:center;gap:12px">
+      🚗 Mission Carpooling &amp; Transportation
+      <span id="carpoolLiveBadge" style="display:none;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;margin-left:auto"></span>
+    </div>
     <div class="card-body">
       <p style="font-size:13px; color:var(--gray-600); margin-bottom:16px">
         For team members to coordinate rides to the mission. Drivers can post available seats; riders can see who to contact.
@@ -1601,6 +1604,7 @@ function addCarpoolEntry() {
   carpoolEntries.push({ name, role: 'driver', day, from, seats, time, returnTime: ret, phone, claimedBy: [] });
   renderCarpoolEntries();
   scheduleSync();
+  pushCarpoolToFirebase();
 
   document.getElementById('cp_name').value   = '';
   document.getElementById('cp_from').value   = '';
@@ -1609,7 +1613,7 @@ function addCarpoolEntry() {
   document.getElementById('cp_phone').value  = '';
 }
 
-function removeCarpoolEntry(i) { carpoolEntries.splice(i,1); renderCarpoolEntries(); scheduleSync(); }
+function removeCarpoolEntry(i) { carpoolEntries.splice(i,1); renderCarpoolEntries(); scheduleSync(); pushCarpoolToFirebase(); }
 
 function claimSeat(driverIdx) {
   const driver = carpoolEntries[driverIdx];
@@ -1621,12 +1625,14 @@ function claimSeat(driverIdx) {
   carpoolEntries[driverIdx].claimedBy.push(name.trim());
   renderCarpoolEntries();
   scheduleSync();
+  pushCarpoolToFirebase();
 }
 
 function unclaimSeat(driverIdx, riderName) {
   carpoolEntries[driverIdx].claimedBy = carpoolEntries[driverIdx].claimedBy.filter(n => n !== riderName);
   renderCarpoolEntries();
   scheduleSync();
+  pushCarpoolToFirebase();
 }
 
 function renderDriverCard(e) {
@@ -1818,6 +1824,9 @@ async function createSharedMission() {
     sharedBlobId = loc.split('/').pop();
     if (!sharedBlobId) throw new Error('No blob ID returned');
 
+    // Start Firebase real-time carpool sync for this mission
+    initFirebaseCarpool(sharedBlobId);
+
     // Stamp mission number into Step 2 if provided
     if (missionNum) {
       const el = document.getElementById('f_mission_number');
@@ -1847,6 +1856,9 @@ async function loadSharedMission(blobId) {
 
     sharedBlobId = blobId;
     carpoolEntries = data.carpoolEntries || [];
+
+    // Start Firebase real-time carpool sync
+    initFirebaseCarpool(blobId);
 
     // Populate basic mission info fields if they're empty
     const fieldMap = { mission_number:'f_mission_number', op_period:'f_op_period', icp:'f_icp', start_time:'f_start_time', coordinates:'f_coordinates', caltopo:'f_caltopo' };
@@ -2618,6 +2630,75 @@ window.switchTab = function(name) {
   if (name === 'history') renderHistoryList();
 };
 
+</script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCOwX9-FJ4fCOySYHFsbIqbGke_ubfHMro",
+  authDomain: "calsar-duty-officer.firebaseapp.com",
+  databaseURL: "https://calsar-duty-officer-default-rtdb.firebaseio.com",
+  projectId: "calsar-duty-officer",
+  storageBucket: "calsar-duty-officer.firebasestorage.app",
+  messagingSenderId: "504921764865",
+  appId: "1:504921764865:web:080c15390f590c0a58fc00"
+};
+firebase.initializeApp(firebaseConfig);
+const fbDb = firebase.database();
+
+let fbCarpoolRef = null;
+let fbListenerActive = false;
+
+function getFirebaseMissionId() {
+  // Use sharedBlobId if available, otherwise sanitize mission number, otherwise null
+  if (sharedBlobId) return sharedBlobId;
+  const mNum = document.getElementById('f_mission_number')?.textContent?.trim();
+  if (mNum) return mNum.replace(/[^a-zA-Z0-9-_]/g, '-');
+  return null;
+}
+
+function initFirebaseCarpool(missionId) {
+  if (!missionId) return;
+  // Detach any previous listener
+  if (fbCarpoolRef) fbCarpoolRef.off('value');
+
+  fbCarpoolRef = fbDb.ref(`missions/${missionId}/carpoolEntries`);
+  fbListenerActive = true;
+
+  fbCarpoolRef.on('value', snapshot => {
+    const data = snapshot.val();
+    if (data !== null) {
+      const incoming = Array.isArray(data) ? data : Object.values(data);
+      // Only update if data differs from local (avoid echo loop)
+      if (JSON.stringify(incoming) !== JSON.stringify(carpoolEntries)) {
+        carpoolEntries = incoming;
+        renderCarpoolEntries();
+        updateLiveSyncBadge(true);
+      }
+    }
+  });
+
+  updateLiveSyncBadge(true);
+}
+
+function pushCarpoolToFirebase() {
+  const missionId = getFirebaseMissionId();
+  if (!missionId) return;
+  if (!fbCarpoolRef || fbCarpoolRef.toString().indexOf(missionId) === -1) {
+    initFirebaseCarpool(missionId);
+  }
+  fbCarpoolRef.set(carpoolEntries).catch(e => console.warn('Firebase write failed:', e));
+}
+
+function updateLiveSyncBadge(connected) {
+  const badge = document.getElementById('carpoolLiveBadge');
+  if (!badge) return;
+  badge.style.display = 'inline-flex';
+  badge.textContent = connected ? '🟢 Live Sync Active' : '⚫ Not Connected';
+  badge.style.background = connected ? '#dcfce7' : '#f1f5f9';
+  badge.style.color = connected ? '#15803d' : '#64748b';
+}
 </script>
 </body>
 </html>
