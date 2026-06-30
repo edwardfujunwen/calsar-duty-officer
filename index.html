@@ -223,6 +223,10 @@
     border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes savePulse {
+    0%, 100% { background: rgba(45,138,78,0.5); box-shadow: none; }
+    50% { background: rgba(240,165,0,0.85); box-shadow: 0 0 10px rgba(240,165,0,0.7); }
+  }
 
   /* ── Modal ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 200; display: none; }
@@ -470,10 +474,6 @@
         <ul id="missingList"></ul>
       </div>
       <div class="info-grid">
-        <div class="info-field">
-          <div class="info-label">Time/Date Message Received</div>
-          <div class="info-value" id="f_received" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 05/21/26 at 1800"></div>
-        </div>
         <div class="info-field">
           <div class="info-label">Mission Number</div>
           <div class="info-value" id="f_mission_number" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 2026-LAW-30168822"></div>
@@ -2073,6 +2073,7 @@ function scheduleMissionPush() {
   if (!sharedBlobId) return;
   clearTimeout(fbPushTimer);
   fbPushTimer = setTimeout(pushFullMissionToFirebase, 1500);
+  resetSaveReminder();
 }
 
 function pushFullMissionToFirebase() {
@@ -2173,11 +2174,29 @@ function populateDaysFromOpPeriod(opPeriod) {
   renderAttendees();
 }
 
+let saveReminderTimer = null;
+
+function resetSaveReminder() {
+  if (!sharedBlobId) return;
+  const btn = document.getElementById('missionSaveBtn');
+  if (!btn) return;
+  btn.style.animation = '';
+  clearTimeout(saveReminderTimer);
+  saveReminderTimer = setTimeout(() => {
+    if (!sharedBlobId) return;
+    btn.style.animation = 'savePulse 1.2s ease-in-out infinite';
+    btn.title = '⚠ Unsaved changes — click to save!';
+  }, 5 * 60 * 1000); // 5 minutes
+}
+
 function saveToFirebaseNow() {
   pushFullMissionToFirebase();
-  const confirm = document.getElementById('missionSavedConfirm');
-  confirm.style.opacity = '1';
-  setTimeout(() => confirm.style.opacity = '0', 2000);
+  const confirmEl = document.getElementById('missionSavedConfirm');
+  confirmEl.style.opacity = '1';
+  setTimeout(() => confirmEl.style.opacity = '0', 2000);
+  const btn = document.getElementById('missionSaveBtn');
+  if (btn) { btn.style.animation = ''; btn.title = ''; }
+  resetSaveReminder();
 }
 
 function endMission() {
