@@ -300,6 +300,22 @@
   <button class="api-key-btn" id="apiKeyBtn" onclick="openApiModal()">⚙ Configure Groq Key</button>
 </div>
 
+<!-- Claim Seat Modal -->
+<div class="modal-overlay" id="claimSeatModal">
+  <div class="modal" style="width:400px">
+    <h3>🙋 Claim a Seat</h3>
+    <p id="claimSeatDesc" style="font-size:13px;margin-top:0"></p>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600)">Your Name</label>
+    <input type="text" id="claimSeatName" placeholder="First Last" autocomplete="off"
+      onkeydown="if(event.key==='Enter')confirmClaimSeat()">
+    <div id="claimSeatError" style="color:var(--red);font-size:12px;margin-top:-10px;margin-bottom:8px;display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('claimSeatModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmClaimSeat()">Claim Seat</button>
+    </div>
+  </div>
+</div>
+
 <!-- D4H Create Incident Modal -->
 <div class="modal-overlay" id="d4hIncidentModal">
   <div class="modal" style="width:560px">
@@ -373,6 +389,8 @@
   <button onclick="copyMissionBarUrl()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600">📋 Copy Link</button>
   <span id="missionBarCopied" style="color:#6fcf97;font-weight:700;font-size:12px;opacity:0;transition:opacity 0.3s">Copied!</span>
   <div style="flex:1"></div>
+  <button onclick="saveToFirebaseNow()" id="missionSaveBtn" style="background:rgba(45,138,78,0.5);border:1px solid rgba(45,138,78,0.8);color:white;padding:4px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700">💾 Save</button>
+  <span id="missionSavedConfirm" style="color:#6fcf97;font-size:12px;font-weight:700;opacity:0;transition:opacity 0.4s">Saved ✓</span>
   <button onclick="endMission()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer">End Mission</button>
 </div>
 
@@ -466,7 +484,7 @@
         </div>
         <div class="info-field">
           <div class="info-label">Operational Period</div>
-          <div class="info-value" id="f_op_period" contenteditable="true" oninput="scheduleMissionPush()" data-placeholder="e.g. 5/23–5/24"></div>
+          <div class="info-value" id="f_op_period" contenteditable="true" oninput="populateDaysFromOpPeriod(this.textContent);scheduleMissionPush()" data-placeholder="e.g. 5/23–5/24"></div>
         </div>
         <div class="info-field">
           <div class="info-label">Coordinates</div>
@@ -1486,12 +1504,8 @@ Return only valid JSON.`;
     document.getElementById('missingList').innerHTML = missing.map(f => `<li>${f}</li>`).join('');
     banner.classList.toggle('visible', missing.length > 0);
 
-    // Auto-label Day 1 if op_period is found
-    if (data.op_period && days[0].label === 'Day 1') {
-      days[0].label = `Day 1 – ${data.op_period.split(/[,–\-]/)[0].trim()}`;
-      renderDayTabs();
-      updateCarpoolDaySelect();
-    }
+    // Auto-populate days from op_period
+    if (data.op_period) populateDaysFromOpPeriod(data.op_period);
 
     await generateSummary();
     await generateTextMessage();
@@ -1687,14 +1701,32 @@ function addCarpoolEntry() {
 
 function removeCarpoolEntry(i) { carpoolEntries.splice(i,1); renderCarpoolEntries(); scheduleSync(); pushCarpoolToFirebase(); }
 
+let claimSeatTargetIdx = null;
+
 function claimSeat(driverIdx) {
   const driver = carpoolEntries[driverIdx];
-  const seatsLeft = driver.seats - driver.claimedBy.length;
+  const seatsLeft = driver.seats - (driver.claimedBy || []).length;
   if (seatsLeft <= 0) { alert('No seats left in this car.'); return; }
-  const name = prompt('Enter your name to claim a seat:');
-  if (!name || !name.trim()) return;
-  if (driver.claimedBy.includes(name.trim())) { alert('You already claimed a seat in this car.'); return; }
-  carpoolEntries[driverIdx].claimedBy.push(name.trim());
+  claimSeatTargetIdx = driverIdx;
+  document.getElementById('claimSeatName').value = '';
+  document.getElementById('claimSeatError').style.display = 'none';
+  document.getElementById('claimSeatDesc').textContent =
+    `Claiming a seat in ${driver.name}'s car (${seatsLeft} seat${seatsLeft !== 1 ? 's' : ''} available, departing ${driver.time || 'TBD'} from ${driver.from}).`;
+  document.getElementById('claimSeatModal').classList.add('open');
+  setTimeout(() => document.getElementById('claimSeatName').focus(), 100);
+}
+
+function confirmClaimSeat() {
+  const name = document.getElementById('claimSeatName').value.trim();
+  const errEl = document.getElementById('claimSeatError');
+  if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
+  const driver = carpoolEntries[claimSeatTargetIdx];
+  if ((driver.claimedBy || []).includes(name)) {
+    errEl.textContent = 'You already claimed a seat in this car.'; errEl.style.display = 'block'; return;
+  }
+  if (!carpoolEntries[claimSeatTargetIdx].claimedBy) carpoolEntries[claimSeatTargetIdx].claimedBy = [];
+  carpoolEntries[claimSeatTargetIdx].claimedBy.push(name);
+  document.getElementById('claimSeatModal').classList.remove('open');
   renderCarpoolEntries();
   scheduleSync();
   pushCarpoolToFirebase();
@@ -2087,6 +2119,65 @@ function copyMissionBarUrl() {
     el.style.opacity = '1';
     setTimeout(() => el.style.opacity = '0', 2000);
   });
+}
+
+function populateDaysFromOpPeriod(opPeriod) {
+  if (!opPeriod) return;
+
+  // Extract individual dates — handles "6/29 and 6/30", "6/29, 6/30, 7/1", "6/29–7/2" (range)
+  let dates = [];
+
+  // Try comma/and separated list first
+  const listMatch = opPeriod.match(/\d{1,2}\/\d{1,2}(?:\/\d{2,4})?/g);
+  if (listMatch && listMatch.length > 0) {
+    dates = listMatch;
+  }
+
+  // If only one date found but there's a range (e.g. "6/29–7/2"), expand it
+  if (dates.length === 1 && opPeriod.match(/[–\-]/)) {
+    const rangeParts = opPeriod.split(/[–\-]/).map(s => s.match(/\d{1,2}\/\d{1,2}/)?.[0]).filter(Boolean);
+    if (rangeParts.length === 2) {
+      const [start, end] = rangeParts.map(d => {
+        const [m, day] = d.split('/').map(Number);
+        const yr = new Date().getFullYear();
+        return new Date(yr, m - 1, day);
+      });
+      const d = new Date(start);
+      dates = [];
+      while (d <= end) {
+        dates.push(`${d.getMonth()+1}/${d.getDate()}`);
+        d.setDate(d.getDate() + 1);
+      }
+    }
+  }
+
+  if (dates.length === 0) return;
+
+  // Build new days array — preserve existing attendees where day index matches
+  const newDays = dates.map((date, i) => ({
+    label: `Day ${i+1} – ${date}`,
+    attendees: days[i] ? days[i].attendees : []
+  }));
+
+  // Add any extra days the user manually added beyond what op_period covers
+  if (days.length > newDays.length) {
+    for (let i = newDays.length; i < days.length; i++) {
+      newDays.push(days[i]);
+    }
+  }
+
+  days = newDays;
+  if (currentDayIdx >= days.length) currentDayIdx = 0;
+  renderDayTabs();
+  updateCarpoolDaySelect();
+  renderAttendees();
+}
+
+function saveToFirebaseNow() {
+  pushFullMissionToFirebase();
+  const confirm = document.getElementById('missionSavedConfirm');
+  confirm.style.opacity = '1';
+  setTimeout(() => confirm.style.opacity = '0', 2000);
 }
 
 function endMission() {
