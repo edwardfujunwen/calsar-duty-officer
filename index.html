@@ -839,6 +839,70 @@
 </div><!-- /tab-history -->
 
 
+<!-- Firebase SDK — must load before main script -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCOwX9-FJ4fCOySYHFsbIqbGke_ubfHMro",
+  authDomain: "calsar-duty-officer.firebaseapp.com",
+  databaseURL: "https://calsar-duty-officer-default-rtdb.firebaseio.com",
+  projectId: "calsar-duty-officer",
+  storageBucket: "calsar-duty-officer.firebasestorage.app",
+  messagingSenderId: "504921764865",
+  appId: "1:504921764865:web:080c15390f590c0a58fc00"
+};
+firebase.initializeApp(firebaseConfig);
+const fbDb = firebase.database();
+
+let fbCarpoolRef = null;
+let fbListenerActive = false;
+
+function getFirebaseMissionId() {
+  if (sharedBlobId) return sharedBlobId;
+  const mNum = document.getElementById('f_mission_number')?.textContent?.trim();
+  if (mNum) return mNum.replace(/[^a-zA-Z0-9-_]/g, '-');
+  return null;
+}
+
+function initFirebaseCarpool(missionId) {
+  if (!missionId) return;
+  if (fbCarpoolRef) fbCarpoolRef.off('value');
+  fbCarpoolRef = fbDb.ref(`missions/${missionId}/carpoolEntries`);
+  fbListenerActive = true;
+  fbCarpoolRef.on('value', snapshot => {
+    const data = snapshot.val();
+    if (data !== null) {
+      const incoming = Array.isArray(data) ? data : Object.values(data);
+      if (JSON.stringify(incoming) !== JSON.stringify(carpoolEntries)) {
+        carpoolEntries = incoming;
+        renderCarpoolEntries();
+        updateLiveSyncBadge(true);
+      }
+    }
+  });
+  updateLiveSyncBadge(true);
+}
+
+function pushCarpoolToFirebase() {
+  const missionId = getFirebaseMissionId();
+  if (!missionId) return;
+  if (!fbCarpoolRef || fbCarpoolRef.toString().indexOf(missionId) === -1) {
+    initFirebaseCarpool(missionId);
+  }
+  fbCarpoolRef.set(carpoolEntries).catch(e => console.warn('Firebase write failed:', e));
+}
+
+function updateLiveSyncBadge(connected) {
+  const badge = document.getElementById('carpoolLiveBadge');
+  if (!badge) return;
+  badge.style.display = 'inline-flex';
+  badge.textContent = connected ? '🟢 Live Sync Active' : '⚫ Not Connected';
+  badge.style.background = connected ? '#dcfce7' : '#f1f5f9';
+  badge.style.color = connected ? '#15803d' : '#64748b';
+}
+</script>
+
 <script>
 // ════════════════════════════════
 // MEMBER DATA
@@ -2704,75 +2768,6 @@ window.switchTab = function(name) {
   if (name === 'history') renderHistoryList();
 };
 
-</script>
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCOwX9-FJ4fCOySYHFsbIqbGke_ubfHMro",
-  authDomain: "calsar-duty-officer.firebaseapp.com",
-  databaseURL: "https://calsar-duty-officer-default-rtdb.firebaseio.com",
-  projectId: "calsar-duty-officer",
-  storageBucket: "calsar-duty-officer.firebasestorage.app",
-  messagingSenderId: "504921764865",
-  appId: "1:504921764865:web:080c15390f590c0a58fc00"
-};
-firebase.initializeApp(firebaseConfig);
-const fbDb = firebase.database();
-
-let fbCarpoolRef = null;
-let fbListenerActive = false;
-
-function getFirebaseMissionId() {
-  // Use sharedBlobId if available, otherwise sanitize mission number, otherwise null
-  if (sharedBlobId) return sharedBlobId;
-  const mNum = document.getElementById('f_mission_number')?.textContent?.trim();
-  if (mNum) return mNum.replace(/[^a-zA-Z0-9-_]/g, '-');
-  return null;
-}
-
-function initFirebaseCarpool(missionId) {
-  if (!missionId) return;
-  // Detach any previous listener
-  if (fbCarpoolRef) fbCarpoolRef.off('value');
-
-  fbCarpoolRef = fbDb.ref(`missions/${missionId}/carpoolEntries`);
-  fbListenerActive = true;
-
-  fbCarpoolRef.on('value', snapshot => {
-    const data = snapshot.val();
-    if (data !== null) {
-      const incoming = Array.isArray(data) ? data : Object.values(data);
-      // Only update if data differs from local (avoid echo loop)
-      if (JSON.stringify(incoming) !== JSON.stringify(carpoolEntries)) {
-        carpoolEntries = incoming;
-        renderCarpoolEntries();
-        updateLiveSyncBadge(true);
-      }
-    }
-  });
-
-  updateLiveSyncBadge(true);
-}
-
-function pushCarpoolToFirebase() {
-  const missionId = getFirebaseMissionId();
-  if (!missionId) return;
-  if (!fbCarpoolRef || fbCarpoolRef.toString().indexOf(missionId) === -1) {
-    initFirebaseCarpool(missionId);
-  }
-  fbCarpoolRef.set(carpoolEntries).catch(e => console.warn('Firebase write failed:', e));
-}
-
-function updateLiveSyncBadge(connected) {
-  const badge = document.getElementById('carpoolLiveBadge');
-  if (!badge) return;
-  badge.style.display = 'inline-flex';
-  badge.textContent = connected ? '🟢 Live Sync Active' : '⚫ Not Connected';
-  badge.style.background = connected ? '#dcfce7' : '#f1f5f9';
-  badge.style.color = connected ? '#15803d' : '#64748b';
-}
 </script>
 </body>
 </html>
