@@ -1489,7 +1489,7 @@ Return only valid JSON.`;
     try { data = JSON.parse(result.trim()); }
     catch { const m = result.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); else throw new Error('Could not parse AI response'); }
 
-    const fieldMap = {received:'f_received',mission_number:'f_mission_number',icp:'f_icp',coordinates:'f_coordinates',caltopo:'f_caltopo',op_period:'f_op_period',start_time:'f_start_time',accommodation:'f_accommodation',resources:'f_resources',poc:'f_poc',mp_info:'f_mp_info',additional:'f_additional'};
+    const fieldMap = {mission_number:'f_mission_number',icp:'f_icp',coordinates:'f_coordinates',caltopo:'f_caltopo',op_period:'f_op_period',start_time:'f_start_time',accommodation:'f_accommodation',resources:'f_resources',poc:'f_poc',mp_info:'f_mp_info',additional:'f_additional'};
     for (const [key, id] of Object.entries(fieldMap)) {
       const el = document.getElementById(id);
       let val = data[key];
@@ -1851,7 +1851,6 @@ function updateCarpoolMissionBanner() {
 // ════════════════════════════════
 function gatherFields() {
   return {
-    received:     document.getElementById('f_received').textContent.trim(),
     mission_number: document.getElementById('f_mission_number').textContent.trim(),
     icp:          document.getElementById('f_icp').textContent.trim(),
     coordinates:  document.getElementById('f_coordinates').textContent.trim(),
@@ -1878,7 +1877,7 @@ function copyText(id, feedbackId) {
 function clearAll() {
   if (!confirm('Clear all fields and start over?')) return;
   document.getElementById('missionNotes').value = '';
-  ['f_received','f_mission_number','f_icp','f_coordinates','f_caltopo','f_op_period','f_start_time','f_accommodation','f_resources','f_poc','f_mp_info','f_additional'].forEach(id => {
+  ['f_mission_number','f_icp','f_coordinates','f_caltopo','f_op_period','f_start_time','f_accommodation','f_resources','f_poc','f_mp_info','f_additional'].forEach(id => {
     const el = document.getElementById(id); el.textContent = ''; el.classList.remove('missing');
   });
   document.getElementById('missingBanner').classList.remove('visible');
@@ -1969,7 +1968,7 @@ async function loadSharedMission(blobId) {
 
     // Restore all Step 2 fields
     const fieldMap = {
-      received:'f_received', mission_number:'f_mission_number', icp:'f_icp',
+      mission_number:'f_mission_number', icp:'f_icp',
       op_period:'f_op_period', coordinates:'f_coordinates', caltopo:'f_caltopo',
       start_time:'f_start_time', accommodation:'f_accommodation', resources:'f_resources',
       poc:'f_poc', mp_info:'f_mp_info', additional:'f_additional'
@@ -2360,7 +2359,7 @@ function loadMissionById(id) {
   if (!confirm(`Load mission ${id} into the dashboard? This will overwrite your current fields.`)) return;
 
   // Restore fields
-  const fieldMap = {mission_number:'f_mission_number',received:'f_received',icp:'f_icp',coordinates:'f_coordinates',caltopo:'f_caltopo',op_period:'f_op_period',start_time:'f_start_time',accommodation:'f_accommodation',resources:'f_resources',poc:'f_poc',mp_info:'f_mp_info',additional:'f_additional'};
+  const fieldMap = {mission_number:'f_mission_number',icp:'f_icp',coordinates:'f_coordinates',caltopo:'f_caltopo',op_period:'f_op_period',start_time:'f_start_time',accommodation:'f_accommodation',resources:'f_resources',poc:'f_poc',mp_info:'f_mp_info',additional:'f_additional'};
   for (const [key, elId] of Object.entries(fieldMap)) {
     const el = document.getElementById(elId);
     el.textContent = m.fields[key] || '';
