@@ -2305,9 +2305,18 @@ function renderHistoryList() {
         <button class="btn btn-sm btn-primary" onclick="viewHistoryMission('${m.id}')">View</button>
         <button class="btn btn-sm btn-secondary" onclick="copyMissionUrl('${m.id}')">🔗 URL</button>
         <button class="btn btn-sm btn-secondary" onclick="loadMissionById('${m.id}')">↩ Load</button>
+        <button class="btn btn-sm" style="background:rgba(192,57,43,0.15);color:#c0392b;border:1px solid rgba(192,57,43,0.3)" onclick="deleteHistoryMission('${m.id}')">🗑 Delete</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function deleteHistoryMission(id) {
+  if (!confirm(`Delete mission "${id}" from history? This cannot be undone.`)) return;
+  const history = loadHistory();
+  delete history[id];
+  localStorage.setItem('calsar_mission_history', JSON.stringify(history));
+  renderHistoryList();
 }
 
 let currentHistoryId = null;
