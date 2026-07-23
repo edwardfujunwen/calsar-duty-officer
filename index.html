@@ -1060,7 +1060,7 @@ function switchTab(name) {
 // ════════════════════════════════
 // API KEY
 // ════════════════════════════════
-let apiKey  = localStorage.getItem('calsar_groq_key') || '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';
+let apiKey  = localStorage.getItem('calsar_groq_key') || '__GROQ_API_KEY__';
 let d4hKey  = localStorage.getItem('calsar_d4h_key')  || '';
 let d4hTeam = localStorage.getItem('calsar_d4h_team') || '';
 updateApiKeyBtn();
@@ -2033,7 +2033,6 @@ function buildFullMissionState(missionNumOverride) {
   const f = gatherFields();
   return {
     fields: {
-      received:      f.received,
       mission_number: missionNumOverride || f.mission_number,
       icp:           f.icp,
       op_period:     f.op_period,
