@@ -1073,7 +1073,7 @@ function switchTab(name) {
 // API KEY
 // ════════════════════════════════
 let apiKey  = localStorage.getItem('calsar_groq_key') || '__GROQ_API_KEY__';
-let d4hKey  = localStorage.getItem('calsar_d4h_key')  || '';
+let d4hKey  = localStorage.getItem('calsar_d4h_key')  || '__D4H_API_KEY__';
 let d4hTeam = localStorage.getItem('calsar_d4h_team') || '';
 updateApiKeyBtn();
 
@@ -2463,17 +2463,20 @@ const D4H_MOCK_ATTENDANCE = {
   1003: [],
 };
 
-function isD4HLive() { return !!d4hKey && !!d4hTeam; }
+function isD4HLive() { return !!d4hKey && !d4hKey.startsWith('__'); }
 
-async function d4hRequest(path, method = 'GET', body = null) {
+async function d4hRequest(path, method = 'GET') {
   if (!isD4HLive()) throw new Error('TEST_MODE');
   const opts = {
     method,
     headers: { 'Authorization': `Bearer ${d4hKey}`, 'Content-Type': 'application/json' }
   };
-  if (body) opts.body = JSON.stringify(body);
-  const resp = await fetch(`https://api.d4h.org/v3/team/${d4hTeam}${path}`, opts);
-  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.message || `D4H error ${resp.status}`); }
+  // Try team-scoped URL first, fall back to account-level
+  const base = d4hTeam
+    ? `https://api.us.d4h.com/v3/team/${d4hTeam}`
+    : `https://api.us.d4h.com/v3`;
+  const resp = await fetch(`${base}${path}`, opts);
+  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.errors?.[0]?.message || e.message || `D4H error ${resp.status}`); }
   return resp.json();
 }
 
