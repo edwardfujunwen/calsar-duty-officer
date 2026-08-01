@@ -5,28 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CalSAR Duty Officer Dashboard</title>
 <style id="auth-hide">body{display:none!important}</style>
-<script>
-(function() {
-  function reveal() {
-    var s = document.getElementById('auth-hide');
-    if (s) s.remove();
-  }
-  function deny() {
-    document.addEventListener('DOMContentLoaded', function() {
-      document.body.style.display = 'block';
-      document.body.innerHTML = '<div style="font-family:sans-serif;background:#0f1a3d;height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px"><div style="color:#ef4444;font-size:1.4rem;font-weight:700">⛔ Access Denied</div><div style="color:#9098b0;font-size:1rem">Close this tab and try again with the correct password.</div></div>';
-    });
-  }
-  if (sessionStorage.getItem('calsar_auth') === 'ok') { reveal(); return; }
-  var pw = prompt('Enter password to access CalSAR Mission Hub:');
-  if (pw === 'calsar1234') {
-    sessionStorage.setItem('calsar_auth', 'ok');
-    reveal();
-  } else {
-    deny();
-  }
-})();
-</script>
+<style>
+#auth-screen {
+  display:none;
+  position:fixed;inset:0;z-index:99999;
+  background:#0f1a3d;
+  align-items:center;justify-content:center;flex-direction:column;gap:24px;
+  font-family:sans-serif;
+}
+#auth-screen.visible { display:flex; }
+#auth-logo { width:72px;height:72px;border-radius:50%; }
+#auth-title { color:#fff;font-size:1.5rem;font-weight:700;margin:0; }
+#auth-subtitle { color:#9098b0;font-size:0.95rem;margin:0;text-align:center; }
+#auth-google-btn {
+  display:flex;align-items:center;gap:12px;
+  background:#fff;color:#1a2b5e;font-size:1rem;font-weight:600;
+  border:none;border-radius:8px;padding:12px 24px;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+#auth-google-btn:hover { background:#f0f4ff; }
+#auth-google-btn img { width:22px;height:22px; }
+#auth-error { color:#ef4444;font-size:0.9rem;display:none;text-align:center;max-width:320px; }
+#auth-user-bar {
+  position:fixed;top:0;right:0;z-index:10000;
+  display:none;align-items:center;gap:10px;
+  padding:6px 14px;background:rgba(15,26,61,0.9);
+  font-family:sans-serif;font-size:12px;color:#9098b0;
+}
+#auth-user-bar.visible { display:flex; }
+#auth-signout-btn { background:none;border:1px solid #5a6280;color:#9098b0;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px; }
+#auth-signout-btn:hover { color:#fff;border-color:#fff; }
+</style>
 <style>
   :root {
     --navy: #1a2b5e;
@@ -308,6 +317,24 @@
 </style>
 </head>
 <body>
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <img id="auth-logo" src="calsar-logo.png" alt="CalSAR" onerror="this.style.display='none'">
+  <p id="auth-title">CalSAR Mission Hub</p>
+  <p id="auth-subtitle">Sign in with your @ca-sar.org or @cal-esar.org<br>Google account to continue.</p>
+  <button id="auth-google-btn" onclick="signInWithGoogle()">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+    Sign in with Google
+  </button>
+  <p id="auth-error"></p>
+</div>
+
+<!-- Signed-in user bar -->
+<div id="auth-user-bar">
+  <span id="auth-user-email"></span>
+  <button id="auth-signout-btn" onclick="signOut()">Sign out</button>
+</div>
 
 <!-- Header -->
 <div class="header">
@@ -887,6 +914,7 @@
 <!-- Firebase SDK — must load before main script -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCOwX9-FJ4fCOySYHFsbIqbGke_ubfHMro",
@@ -899,6 +927,62 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const fbDb = firebase.database();
+const fbAuth = firebase.auth();
+
+const ALLOWED_DOMAINS = ['ca-sar.org', 'cal-esar.org'];
+
+function isAllowedEmail(email) {
+  if (!email) return false;
+  const domain = email.split('@')[1];
+  return ALLOWED_DOMAINS.includes(domain);
+}
+
+function showAuthScreen() {
+  document.getElementById('auth-screen').classList.add('visible');
+}
+
+function hideAuthScreen() {
+  document.getElementById('auth-screen').classList.remove('visible');
+  var s = document.getElementById('auth-hide');
+  if (s) s.remove();
+}
+
+function signInWithGoogle() {
+  document.getElementById('auth-error').style.display = 'none';
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ hd: 'ca-sar.org' });
+  fbAuth.signInWithPopup(provider).catch(function(err) {
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('auth-error').textContent = 'Sign-in failed: ' + err.message;
+  });
+}
+
+function signOut() {
+  fbAuth.signOut();
+}
+
+fbAuth.onAuthStateChanged(function(user) {
+  if (user && isAllowedEmail(user.email)) {
+    hideAuthScreen();
+    var bar = document.getElementById('auth-user-bar');
+    if (bar) {
+      bar.classList.add('visible');
+      document.getElementById('auth-user-email').textContent = user.email;
+    }
+  } else if (user) {
+    // Signed in but wrong domain
+    fbAuth.signOut();
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('auth-error').textContent = '⛔ Access restricted to @ca-sar.org and @cal-esar.org accounts only.';
+    showAuthScreen();
+    var s = document.getElementById('auth-hide');
+    if (s) s.remove();
+  } else {
+    showAuthScreen();
+    var s = document.getElementById('auth-hide');
+    if (s) s.remove();
+  }
+});
 
 let fbCarpoolRef = null;
 let fbListenerActive = false;
