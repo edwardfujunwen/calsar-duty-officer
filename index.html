@@ -911,7 +911,7 @@
   <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:16px 20px;margin-bottom:28px">
     <div style="font-weight:700;font-size:14px;margin-bottom:6px">🛠 Something broken? Contact:</div>
     <div style="font-size:14px;line-height:1.8">
-      <strong>Ed Fu</strong> — App Developer / DO Manager<br>
+      <strong>Ed Fu</strong> — DO Manager<br>
       📞 <a href="tel:16505615537" style="color:#1a1f36">650-561-5537</a><br>
       ✉ <a href="mailto:ed.fu@ca-sar.org" style="color:#1a1f36">ed.fu@ca-sar.org</a>
     </div>
@@ -927,7 +927,7 @@
         The main working tab for an active mission. Work through the steps top to bottom:<br>
         <strong>Step 1</strong> — Paste raw mission notes (email, text, CAD printout) into the drop zone or text box.<br>
         <strong>Step 2</strong> — Click <em>Parse Mission Info</em> to have Claude AI extract county, POC, resource request, op period, and more.<br>
-        <strong>Step 3</strong> — Review and edit the Incident Briefing Summary.<br>
+        <strong>Step 3</strong> — Review and edit the Incident Briefing Summary. Manually copy and paste this into the D4H incident.<br>
         <strong>Step 4</strong> — Copy the auto-generated unit text message to send to the team.<br>
         <strong>Step 5</strong> — Add responding members manually or pull directly from D4H (see D4H section below).<br>
         <strong>Step 6</strong> — Generate and copy the OES response email.
@@ -1020,6 +1020,21 @@
         <div style="font-weight:700;font-size:13px;margin-bottom:4px">Can I use this on my phone?</div>
         <div style="font-size:13px;color:#374151">Yes — the app is mobile-friendly. Some features (like file drop zones) work best on desktop, but the core DO workflow functions on iPhone and Android browsers.</div>
       </div>
+    </div>
+  </div>
+
+  <!-- Source Code -->
+  <div style="margin-bottom:28px">
+    <h3 style="font-size:16px;color:#1a1f36;margin:0 0 14px;border-bottom:2px solid #e2e8f0;padding-bottom:8px">💻 Source Code & Editing</h3>
+    <div style="font-size:13px;color:#374151;line-height:1.8">
+      <p style="margin:0 0 10px">The entire app lives in a single file — <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">index.html</code> — hosted on GitHub and auto-deployed to Render whenever changes are pushed.</p>
+      <ul style="margin:0 0 10px;padding-left:20px">
+        <li style="margin-bottom:6px"><strong>GitHub repo:</strong> <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">github.com/edwardfujunwen/calsar-duty-officer</code></li>
+        <li style="margin-bottom:6px"><strong>Live app:</strong> <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">calsar-duty-officer.onrender.com</code></li>
+        <li style="margin-bottom:6px"><strong>To make changes:</strong> Edit <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">index.html</code> and push to GitHub — Render auto-deploys within ~1 minute.</li>
+        <li style="margin-bottom:6px"><strong>API keys</strong> are stored as secrets in Cloudflare Workers and Render environment variables — never in the source code.</li>
+      </ul>
+      <p style="margin:0">For help making changes, contact Ed Fu or use Claude Code (the AI tool used to build this app).</p>
     </div>
   </div>
 
