@@ -351,7 +351,7 @@
   <button class="api-key-btn" onclick="printBriefing()" style="margin-right:8px">🖨 Print Briefing</button>
   <button class="api-key-btn" id="newMissionBtn" onclick="openNewMissionModal()" style="margin-right:8px;background:rgba(240,165,0,0.35);border-color:rgba(240,165,0,0.6);font-weight:700">🚀 Start New Mission</button>
   <button class="api-key-btn" id="saveMissionBtn" onclick="saveMission()" style="margin-right:8px;background:rgba(45,138,78,0.3);border-color:rgba(45,138,78,0.5)">💾 Save Snapshot</button>
-  <button class="api-key-btn" id="apiKeyBtn" onclick="openApiModal()">⚙ Configure Groq Key</button>
+  <button class="api-key-btn" id="apiKeyBtn" onclick="openApiModal()">⚙ Configure Claude Key</button>
 </div>
 
 <!-- Claim Seat Modal -->
@@ -460,9 +460,9 @@
   <div class="modal" style="width:520px">
     <h3>⚙ API Configuration</h3>
 
-    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-600);margin-bottom:6px">Groq API Key (AI features)</div>
-    <p style="margin-top:0;font-size:13px">Used to parse mission notes and generate messages. Free key at <strong>console.groq.com</strong> → API Keys.</p>
-    <input type="password" id="apiKeyInput" placeholder="gsk_..." autocomplete="off" style="margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-600);margin-bottom:6px">Claude API Key (AI features)</div>
+    <p style="margin-top:0;font-size:13px">Used to parse mission notes and generate messages. Get your key at <strong>console.anthropic.com</strong> → API Keys.</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" style="margin-bottom:16px">
 
     <div style="border-top:1px solid var(--gray-200);padding-top:16px;margin-bottom:6px">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-600);margin-bottom:6px">D4H Integration <span style="background:#f0a500;color:white;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;vertical-align:middle">OPTIONAL</span></div>
@@ -1167,7 +1167,7 @@ function switchTab(name) {
 // ════════════════════════════════
 // API KEY
 // ════════════════════════════════
-let apiKey  = localStorage.getItem('calsar_groq_key') || '__GROQ_API_KEY__';
+let apiKey  = localStorage.getItem('calsar_groq_key') || '__CLAUDE_API_KEY__';
 let d4hKey  = localStorage.getItem('calsar_d4h_key')  || '__D4H_API_KEY__';
 let d4hTeam = localStorage.getItem('calsar_d4h_team') || '';
 updateApiKeyBtn();
@@ -1191,24 +1191,29 @@ function saveApiKey() {
 function updateApiKeyBtn() {
   const btn = document.getElementById('apiKeyBtn');
   const d4hLive = isD4HLive();
-  if (apiKey && d4hLive) { btn.textContent = '✓ Groq + D4H Configured'; btn.classList.add('configured'); }
-  else if (apiKey)       { btn.textContent = '✓ Groq Key Configured';    btn.classList.add('configured'); }
+  if (apiKey && d4hLive) { btn.textContent = '✓ Claude + D4H Configured'; btn.classList.add('configured'); }
+  else if (apiKey)       { btn.textContent = '✓ Claude Key Configured';    btn.classList.add('configured'); }
   else                   { btn.textContent = '⚙ Configure API Keys';      btn.classList.remove('configured'); }
 }
 
 // ════════════════════════════════
-// GROQ API
+// CLAUDE API
 // ════════════════════════════════
 async function callAI(prompt) {
   if (!apiKey) { openApiModal(); throw new Error('API key required'); }
-  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 1024, messages: [{role:'user',content:prompt}] })
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true'
+    },
+    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, messages: [{role:'user',content:prompt}] })
   });
   if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `API error ${resp.status}`); }
   const data = await resp.json();
-  return data.choices[0].message.content;
+  return data.content[0].text;
 }
 
 function handleNotesFileDrop(event) {
@@ -1249,16 +1254,16 @@ async function extractNotesFromFile(file) {
         reader.readAsDataURL(file);
       });
 
-      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 2048,
           messages: [{
             role: 'user',
             content: [
-              { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64}` } },
+              { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } },
               { type: 'text', text: 'Transcribe all text visible in this image exactly as written. Include every detail — mission numbers, names, times, locations, coordinates, and any other information. Return only the raw transcribed text, no commentary.' }
             ]
           }]
@@ -1266,7 +1271,7 @@ async function extractNotesFromFile(file) {
       });
       if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `API error ${resp.status}`); }
       const data = await resp.json();
-      extractedText = data.choices[0].message.content.trim();
+      extractedText = data.content[0].text.trim();
 
     } else {
       // Text-based: PDF, .eml, .msg, .txt — read as text
@@ -1337,18 +1342,18 @@ async function importFromD4HFile(file) {
 
     const mimeType = file.type || 'image/png';
 
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         messages: [{
           role: 'user',
           content: [
             {
-              type: 'image_url',
-              image_url: { url: `data:${mimeType};base64,${base64}` }
+              type: 'image',
+              source: { type: 'base64', media_type: mimeType, data: base64 }
             },
             {
               type: 'text',
@@ -1365,7 +1370,7 @@ async function importFromD4HFile(file) {
     }
 
     const data = await resp.json();
-    const raw = data.choices[0].message.content.trim();
+    const raw = data.content[0].text.trim();
 
     // Parse the JSON array from the response
     const match = raw.match(/\[[\s\S]*\]/);
