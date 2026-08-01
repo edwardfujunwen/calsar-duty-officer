@@ -2566,19 +2566,12 @@ const D4H_MOCK_ATTENDANCE = {
   1003: [],
 };
 
-function isD4HLive() { return !!d4hKey && !d4hKey.startsWith('__'); }
+const D4H_PROXY = 'https://calsar-d4h-proxy.edwardfujunwen.workers.dev';
+
+function isD4HLive() { return true; }
 
 async function d4hRequest(path, method = 'GET') {
-  if (!isD4HLive()) throw new Error('TEST_MODE');
-  const opts = {
-    method,
-    headers: { 'Authorization': `Bearer ${d4hKey}`, 'Content-Type': 'application/json' }
-  };
-  // Try team-scoped URL first, fall back to account-level
-  const base = d4hTeam
-    ? `https://api.us.d4h.com/v3/team/${d4hTeam}`
-    : `https://api.us.d4h.com/v3`;
-  const resp = await fetch(`${base}${path}`, opts);
+  const resp = await fetch(`${D4H_PROXY}${path}`, { method });
   if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.errors?.[0]?.message || e.message || `D4H error ${resp.status}`); }
   return resp.json();
 }
