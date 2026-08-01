@@ -2662,7 +2662,7 @@ async function openD4HAttendanceModal() {
 }
 
 function parseD4HIncidentId(url) {
-  const m = url.match(/\/incident[s]?\/(\d+)/i);
+  const m = url.match(/\/(\d+)\s*$/);
   return m ? m[1] : null;
 }
 
