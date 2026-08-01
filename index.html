@@ -2240,6 +2240,7 @@ function saveToFirebaseNow() {
 function endMission() {
   if (!confirm('End this mission? A snapshot will be saved to Mission History and the carpool link will stop syncing.')) return;
   saveMission(); // auto-save before closing out
+  stopD4HAutoSync();
   sharedBlobId = null;
   window.location.hash = '';
   document.getElementById('missionBar').style.display = 'none';
@@ -2262,6 +2263,7 @@ function getMissionId() {
 }
 
 function saveMission() {
+  syncD4HAttendance();
   let missionId = getMissionId();
   if (!missionId) {
     // Use Firebase mission ID or timestamp as fallback so we never lose data
@@ -2570,6 +2572,54 @@ async function submitD4HIncident() {
 
 // ── Pull Attendance ──────────────────────────────
 let d4hFetchedAttendees = [];
+let d4hActiveIncidentId = null;
+let d4hSyncInterval = null;
+
+function startD4HAutoSync(incidentId) {
+  d4hActiveIncidentId = incidentId;
+  if (d4hSyncInterval) clearInterval(d4hSyncInterval);
+  d4hSyncInterval = setInterval(() => syncD4HAttendance(), 2 * 60 * 1000);
+}
+
+function stopD4HAutoSync() {
+  d4hActiveIncidentId = null;
+  if (d4hSyncInterval) { clearInterval(d4hSyncInterval); d4hSyncInterval = null; }
+}
+
+async function syncD4HAttendance() {
+  if (!d4hActiveIncidentId) return;
+  try {
+    const attData = await d4hRequest(`/team/1682/attendance?activity_id=${d4hActiveIncidentId}&status=ATTENDING&size=200`);
+    const attResults = attData.results || [];
+    const memberIds = attResults.map(a => a.member?.id).filter(Boolean);
+    if (!memberIds.length) { days[currentDayIdx].attendees = []; renderAttendees(); return; }
+    const idQuery = memberIds.map(id => `id[]=${id}`).join('&');
+    const memData = await d4hRequest(`/team/1682/members?${idQuery}&size=50`);
+    const memberMap = {};
+    (memData.results || []).forEach(m => { memberMap[m.id] = { name: m.name, ref: String(m.ref||''), position: m.position||'' }; });
+    const fresh = attResults.map(a => {
+      const mem = memberMap[a.member?.id] || {};
+      return { name: mem.name || `Member #${a.member?.id}`, ref: mem.ref||'', position: mem.position||'', phone:'', region:'' };
+    });
+    // Merge: add new, remove departed, keep manual additions
+    const currentAttendees = days[currentDayIdx].attendees;
+    const freshNames = new Set(fresh.map(a => a.name.toLowerCase()));
+    // Remove people who are no longer attending (only those originally from D4H sync)
+    days[currentDayIdx].attendees = currentAttendees.filter(a => !a._fromD4H || freshNames.has(a.name.toLowerCase()));
+    // Add new attendees
+    const existingNames = new Set(days[currentDayIdx].attendees.map(a => a.name.toLowerCase()));
+    fresh.forEach(a => {
+      if (!existingNames.has(a.name.toLowerCase())) {
+        days[currentDayIdx].attendees.push({ ...a, _fromD4H: true });
+      }
+    });
+    renderAttendees();
+    const el = document.getElementById('d4hPullStatus');
+    if (el) el.textContent = `Last sync: ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+  } catch(e) {
+    console.warn('D4H auto-sync failed:', e.message);
+  }
+}
 
 async function openD4HAttendanceModal() {
   d4hFetchedAttendees = [];
@@ -2661,7 +2711,7 @@ function importD4HAttendance() {
     if (currentAttendees.find(x => x.name.toLowerCase() === nameLower)) {
       skipped++;
     } else {
-      currentAttendees.push({ name: a.name, ref: a.ref || '', position: a.position || '', phone: '', region: '' });
+      currentAttendees.push({ name: a.name, ref: a.ref || '', position: a.position || '', phone: '', region: '', _fromD4H: true });
       added++;
     }
   });
@@ -2672,12 +2722,17 @@ function importD4HAttendance() {
   resultEl.style.background = '#d4edda';
   resultEl.style.border = '1px solid #a3d9a5';
   resultEl.style.color = '#155724';
-  resultEl.textContent = `✅ ${added} member${added!==1?'s':''} imported${skipped ? `, ${skipped} already in list (skipped)` : ''}.`;
+  resultEl.textContent = `✅ ${added} member${added!==1?'s':''} imported${skipped ? `, ${skipped} already in list (skipped)` : ''}. Auto-syncing every 2 min.`;
   resultEl.style.display = 'block';
   document.getElementById('d4hImportBtn').disabled = true;
 
   document.getElementById('d4hPullStatus').textContent =
     `Last pull: ${added} added, ${skipped} skipped${isD4HLive() ? '' : ' (test mode)'}`;
+
+  // Start auto-sync using the incident ID from the URL input
+  const url = document.getElementById('d4hIncidentUrl').value.trim();
+  const incidentId = parseD4HIncidentId(url);
+  if (incidentId) startD4HAutoSync(incidentId);
 }
 
 // ════════════════════════════════
