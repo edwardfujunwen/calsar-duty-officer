@@ -26,14 +26,7 @@
 #auth-google-btn:hover { background:#f0f4ff; }
 #auth-google-btn img { width:22px;height:22px; }
 #auth-error { color:#ef4444;font-size:0.9rem;display:none;text-align:center;max-width:320px; }
-#auth-user-bar {
-  position:fixed;top:0;right:0;z-index:10000;
-  display:none;align-items:center;gap:10px;
-  padding:6px 14px;background:rgba(15,26,61,0.9);
-  font-family:sans-serif;font-size:12px;color:#9098b0;
-}
-#auth-user-bar.visible { display:flex; }
-#auth-signout-btn { background:none;border:1px solid #5a6280;color:#9098b0;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px; }
+#auth-signout-btn { background:none;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.5);border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px; }
 #auth-signout-btn:hover { color:#fff;border-color:#fff; }
 </style>
 <style>
@@ -59,7 +52,7 @@
     --radius-sm: 6px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--off-white); color: #1a1f36; min-height: 100vh; padding-top: 32px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--off-white); color: #1a1f36; min-height: 100vh; }
 
   /* ── Header ── */
   .header {
@@ -331,10 +324,6 @@
 </div>
 
 <!-- Signed-in user bar -->
-<div id="auth-user-bar">
-  <span id="auth-user-email"></span>
-  <button id="auth-signout-btn" onclick="signOut()">Sign out</button>
-</div>
 
 <!-- Header -->
 <div class="header">
@@ -351,6 +340,8 @@
   <button class="api-key-btn" onclick="printBriefing()" style="margin-right:8px">🖨 Print Briefing</button>
   <button class="api-key-btn" id="newMissionBtn" onclick="openNewMissionModal()" style="margin-right:8px;background:rgba(240,165,0,0.35);border-color:rgba(240,165,0,0.6);font-weight:700">🚀 Start New Mission</button>
   <button class="api-key-btn" id="saveMissionBtn" onclick="saveMission()" style="margin-right:8px;background:rgba(45,138,78,0.3);border-color:rgba(45,138,78,0.5)">💾 Save Snapshot</button>
+  <span id="auth-user-email" style="font-size:11px;color:rgba(255,255,255,0.5);margin-left:8px"></span>
+  <button id="auth-signout-btn" onclick="signOut()" style="margin-left:6px">Sign out</button>
 </div>
 
 <!-- Claim Seat Modal -->
@@ -962,11 +953,7 @@ fbAuth.onAuthStateChanged(function(user) {
   if (user && isAllowedEmail(user.email)) {
     hideAuthScreen();
     loadMembersFromD4H();
-    var bar = document.getElementById('auth-user-bar');
-    if (bar) {
-      bar.classList.add('visible');
-      document.getElementById('auth-user-email').textContent = user.email;
-    }
+    document.getElementById('auth-user-email').textContent = user.email;
   } else if (user) {
     // Signed in but wrong domain
     fbAuth.signOut();
