@@ -4,15 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CalSAR Duty Officer Dashboard</title>
+<style id="auth-hide">body{display:none!important}</style>
 <script>
 (function() {
-  if (sessionStorage.getItem('calsar_auth') !== 'ok') {
-    var pw = prompt('Enter password to access CalSAR Mission Hub:');
-    if (pw !== 'calsar1234') {
-      document.write('<div style="font-family:sans-serif;text-align:center;margin-top:20%;color:#c0392b;font-size:1.2rem;">Access denied. Please close this tab and try again.</div>');
-      throw new Error('Access denied');
-    }
+  function reveal() {
+    var s = document.getElementById('auth-hide');
+    if (s) s.remove();
+  }
+  function deny() {
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.style.display = 'block';
+      document.body.innerHTML = '<div style="font-family:sans-serif;background:#0f1a3d;height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px"><div style="color:#ef4444;font-size:1.4rem;font-weight:700">⛔ Access Denied</div><div style="color:#9098b0;font-size:1rem">Close this tab and try again with the correct password.</div></div>';
+    });
+  }
+  if (sessionStorage.getItem('calsar_auth') === 'ok') { reveal(); return; }
+  var pw = prompt('Enter password to access CalSAR Mission Hub:');
+  if (pw === 'calsar1234') {
     sessionStorage.setItem('calsar_auth', 'ok');
+    reveal();
+  } else {
+    deny();
   }
 })();
 </script>
