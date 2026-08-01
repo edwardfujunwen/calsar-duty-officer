@@ -2616,7 +2616,7 @@ async function submitD4HIncident() {
   try {
     let incidentId, message;
     if (isD4HLive()) {
-      const data = await d4hRequest('/incidents', 'POST', payload);
+      const data = await d4hRequest('/team/incidents', 'POST', payload);
       incidentId = data.id || data.data?.id;
       message = `✅ Incident created in D4H! ID: ${incidentId}`;
     } else {
@@ -2664,7 +2664,7 @@ async function openD4HAttendanceModal() {
   try {
     let incidents;
     if (isD4HLive()) {
-      const data = await d4hRequest('/incidents');
+      const data = await d4hRequest('/team/incidents');
       incidents = data.data || data;
     } else {
       await new Promise(r => setTimeout(r, 400));
@@ -2691,7 +2691,7 @@ async function previewD4HAttendance() {
   try {
     let attendees;
     if (isD4HLive()) {
-      const data = await d4hRequest(`/incidents/${incidentId}/members`);
+      const data = await d4hRequest(`/team/incidents/${incidentId}/attendance`);
       attendees = data.data || data;
     } else {
       await new Promise(r => setTimeout(r, 600));
