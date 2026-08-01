@@ -1673,8 +1673,15 @@ async function generateTextMessage() {
   const el = document.getElementById('textMessage');
   try {
     const prompt = `Generate a unit activation text message for a Search and Rescue team. Must be UNDER 150 characters total.
-The message MUST include: the operational period date(s), the briefing time, and end with exactly "Respond Yes/No via Text OR D4H".
-Format: "!UNIT ACTIVE! [mission#]. [brief MP info]. [op period date(s)], briefing [time], [ICP]. Respond Yes/No via Text OR D4H"
+
+Rules:
+- Start with the county/location of the search (e.g. "Humboldt Co")
+- Include the specific resource types and quantities being requested. Look for Type I (T1), Type II (T2), Strong Type II, K9, Drone etc. in the resources field. Use abbreviations: T1, T2, Strong T2, K9 etc.
+- Include the operational period date(s) and briefing time
+- End with exactly "Respond Yes/No via Text OR D4H"
+
+Format: "!UNIT ACTIVE! [County]. [resource request e.g. 40 Strong T2, 5 K9]. [op period], briefing [time]. Respond Yes/No via Text OR D4H"
+
 Mission details: ${JSON.stringify(gatherFields())}
 Return ONLY the message text. Under 150 chars total.`;
     el.innerHTML = '<span style="color:var(--gray-400)">Generating...</span>';
