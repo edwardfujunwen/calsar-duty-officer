@@ -441,6 +441,7 @@
   <button class="tab-btn active" id="tabBtn-do" onclick="switchTab('do')">📋 DO Dashboard</button>
   <button class="tab-btn" id="tabBtn-carpool" onclick="switchTab('carpool')">🚗 Carpooling</button>
   <button class="tab-btn" id="tabBtn-history" onclick="switchTab('history')">📁 Mission History</button>
+  <button class="tab-btn" id="tabBtn-help" onclick="switchTab('help')">❓ Help</button>
 </div>
 
 <!-- API Key Modal -->
@@ -897,6 +898,147 @@
 
 </div>
 </div><!-- /tab-history -->
+
+<div id="tab-help" class="tab-panel" style="display:none;max-width:800px;margin:0 auto;padding:24px 16px">
+
+  <!-- Header -->
+  <div style="margin-bottom:28px">
+    <h2 style="margin:0 0 6px;font-size:22px;color:#1a1f36">❓ Help & Documentation</h2>
+    <p style="margin:0;color:#64748b;font-size:14px">How to use the CalSAR Mission Hub, how it was built, and who to contact if something breaks.</p>
+  </div>
+
+  <!-- Support Contact -->
+  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:16px 20px;margin-bottom:28px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px">🛠 Something broken? Contact:</div>
+    <div style="font-size:14px;line-height:1.8">
+      <strong>Ed Fu</strong> — App Developer / DO Manager<br>
+      📞 <a href="tel:16505615537" style="color:#1a1f36">650-561-5537</a><br>
+      ✉ <a href="mailto:ed.fu@ca-sar.org" style="color:#1a1f36">ed.fu@ca-sar.org</a>
+    </div>
+  </div>
+
+  <!-- Tab Instructions -->
+  <div style="margin-bottom:28px">
+    <h3 style="font-size:16px;color:#1a1f36;margin:0 0 14px;border-bottom:2px solid #e2e8f0;padding-bottom:8px">📋 How to Use Each Tab</h3>
+
+    <div style="margin-bottom:18px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1e40af">📋 DO Dashboard</div>
+      <div style="font-size:13px;color:#374151;line-height:1.7">
+        The main working tab for an active mission. Work through the steps top to bottom:<br>
+        <strong>Step 1</strong> — Paste raw mission notes (email, text, CAD printout) into the drop zone or text box.<br>
+        <strong>Step 2</strong> — Click <em>Parse Mission Info</em> to have Claude AI extract county, POC, resource request, op period, and more.<br>
+        <strong>Step 3</strong> — Review and edit the Incident Briefing Summary.<br>
+        <strong>Step 4</strong> — Copy the auto-generated unit text message to send to the team.<br>
+        <strong>Step 5</strong> — Add responding members manually or pull directly from D4H (see D4H section below).<br>
+        <strong>Step 6</strong> — Generate and copy the OES response email.
+      </div>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1e40af">🚗 Carpooling</div>
+      <div style="font-size:13px;color:#374151;line-height:1.7">
+        Shared carpool coordination board. All DOs on the same mission can see and update this in real time via a shared Firebase link. Start a mission first, then share the link so team members can add their carpool info.
+      </div>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1e40af">📁 Mission History</div>
+      <div style="font-size:13px;color:#374151;line-height:1.7">
+        Every time you click <em>Save Snapshot</em> or end a mission, a record is saved here. You can reload a past mission to review it. History is stored in your browser — it does not sync across devices.
+      </div>
+    </div>
+  </div>
+
+  <!-- D4H Integration -->
+  <div style="margin-bottom:28px">
+    <h3 style="font-size:16px;color:#1a1f36;margin:0 0 14px;border-bottom:2px solid #e2e8f0;padding-bottom:8px">🔄 D4H Integration — How It Works</h3>
+    <div style="font-size:13px;color:#374151;line-height:1.8">
+      <p style="margin:0 0 10px">The app is connected to D4H for two things: the <strong>member directory</strong> and <strong>incident attendance</strong>.</p>
+
+      <div style="margin-bottom:12px">
+        <strong>Member Directory</strong><br>
+        When you sign in, the app automatically loads all <em>Operational</em> (field-deployable) CalSAR members from D4H. This means new members, departures, and cert changes in D4H are always reflected — no manual updates needed.
+      </div>
+
+      <div style="margin-bottom:12px">
+        <strong>Attendance Auto-Sync</strong><br>
+        Once you paste a D4H incident URL and click <em>Import</em>, the app starts syncing attendance automatically:
+        <ul style="margin:8px 0 0 16px;padding:0">
+          <li style="margin-bottom:5px"><strong>First import</strong> — paste the D4H incident URL (e.g. <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">https://calsar.team-manager.us.d4h.com/team/incidents/view/XXXXXX</code>), click Preview, then Import.</li>
+          <li style="margin-bottom:5px"><strong>Every 2 minutes</strong> — silently re-pulls from D4H, adds new attendees, removes anyone no longer marked Attending. People added manually are never removed.</li>
+          <li style="margin-bottom:5px"><strong>On Save</strong> — triggers an immediate sync before saving the snapshot.</li>
+          <li style="margin-bottom:5px"><strong>End Mission</strong> — stops the sync automatically.</li>
+        </ul>
+      </div>
+
+      <div>
+        <strong>Only ATTENDING members are imported.</strong> Absent and unconfirmed members in D4H are ignored.
+      </div>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div style="margin-bottom:28px">
+    <h3 style="font-size:16px;color:#1a1f36;margin:0 0 14px;border-bottom:2px solid #e2e8f0;padding-bottom:8px">💡 Helpful Tips</h3>
+    <ul style="font-size:13px;color:#374151;line-height:1.8;margin:0;padding-left:20px">
+      <li style="margin-bottom:8px">You can paste raw mission notes in <strong>any format</strong> — email text, forwarded messages, CAD printouts. Claude AI will figure out the structure.</li>
+      <li style="margin-bottom:8px">The <strong>unit text message</strong> is CalSAR-specific: it only lists T1, T2, Strong T2, and Overhead resources. K9, Drone, and CAP are automatically excluded.</li>
+      <li style="margin-bottom:8px">If the <strong>POC parsed incorrectly</strong>, check the mission notes — Claude looks for labels like "Operational POC" or "Field POC". If multiple POCs exist, it picks the operational one.</li>
+      <li style="margin-bottom:8px">The <strong>carpool link</strong> is unique to each mission. Share it with your team so everyone can coordinate pickups in real time without needing to log in.</li>
+      <li style="margin-bottom:8px">You can <strong>edit any field</strong> in the Incident Briefing Summary directly — click into it and type.</li>
+      <li style="margin-bottom:8px"><strong>Save often</strong> — the Save Snapshot button also triggers a D4H attendance sync.</li>
+      <li style="margin-bottom:8px">This app is restricted to <strong>@ca-sar.org</strong> and <strong>@cal-esar.org</strong> Google accounts only.</li>
+    </ul>
+  </div>
+
+  <!-- FAQ -->
+  <div style="margin-bottom:28px">
+    <h3 style="font-size:16px;color:#1a1f36;margin:0 0 14px;border-bottom:2px solid #e2e8f0;padding-bottom:8px">❓ Frequently Asked Questions</h3>
+
+    <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+      <div style="padding:14px 16px;border-bottom:1px solid #e2e8f0">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Why can't I log in?</div>
+        <div style="font-size:13px;color:#374151">Only @ca-sar.org and @cal-esar.org Google accounts are allowed. Make sure you're signing in with your CalSAR-issued Google account, not a personal Gmail.</div>
+      </div>
+      <div style="padding:14px 16px;border-bottom:1px solid #e2e8f0">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Parse Mission Info isn't working / "Failed to fetch"</div>
+        <div style="font-size:13px;color:#374151">This means the Claude AI proxy is down. Try refreshing the page. If it persists, contact Ed Fu.</div>
+      </div>
+      <div style="padding:14px 16px;border-bottom:1px solid #e2e8f0">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">D4H attendance pull isn't working</div>
+        <div style="font-size:13px;color:#374151">Make sure you're pasting the full D4H incident URL (e.g. <code style="background:#f1f5f9;padding:1px 4px;border-radius:3px">https://calsar.team-manager.us.d4h.com/team/incidents/view/XXXXXX</code>). If it still fails, the D4H API key may have expired — contact Ed Fu to rotate it.</div>
+      </div>
+      <div style="padding:14px 16px;border-bottom:1px solid #e2e8f0">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">A member is missing from the search list</div>
+        <div style="font-size:13px;color:#374151">The member list pulls only <em>Operational</em> members from D4H. If someone is missing, their D4H status may be set to Non-Operational, Observer, or Retired. Check their status in D4H.</div>
+      </div>
+      <div style="padding:14px 16px;border-bottom:1px solid #e2e8f0">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Mission history disappeared</div>
+        <div style="font-size:13px;color:#374151">Mission history is stored in your browser's local storage. Clearing browser data or using a different browser/device will not show previous missions. Always save a PDF or screenshot for official records.</div>
+      </div>
+      <div style="padding:14px 16px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Can I use this on my phone?</div>
+        <div style="font-size:13px;color:#374151">Yes — the app is mobile-friendly. Some features (like file drop zones) work best on desktop, but the core DO workflow functions on iPhone and Android browsers.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it was built -->
+  <div style="margin-bottom:28px">
+    <h3 style="font-size:16px;color:#1a1f36;margin:0 0 14px;border-bottom:2px solid #e2e8f0;padding-bottom:8px">🔧 How This Was Built</h3>
+    <div style="font-size:13px;color:#374151;line-height:1.8">
+      <p style="margin:0 0 10px">The CalSAR Mission Hub is a single-page web app built and maintained by Ed Fu. Here's what powers it:</p>
+      <ul style="margin:0;padding-left:20px">
+        <li style="margin-bottom:6px"><strong>Claude AI (Haiku)</strong> — used for parsing mission notes, extracting structured data, and generating text messages and emails.</li>
+        <li style="margin-bottom:6px"><strong>D4H API</strong> — connected to CalSAR's D4H Team Manager account for live member directory and incident attendance.</li>
+        <li style="margin-bottom:6px"><strong>Cloudflare Workers</strong> — two serverless proxies that securely relay requests to Claude and D4H (API keys never exposed to the browser).</li>
+        <li style="margin-bottom:6px"><strong>Firebase</strong> — powers real-time carpool sync and Google authentication restricted to CalSAR accounts.</li>
+        <li style="margin-bottom:6px"><strong>Render</strong> — hosts the web app at <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">calsar-duty-officer.onrender.com</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+</div><!-- /tab-help -->
 
 
 <!-- Firebase SDK — must load before main script -->
