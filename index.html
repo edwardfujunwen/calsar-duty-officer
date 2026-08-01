@@ -2333,8 +2333,11 @@ function getMissionId() {
 }
 
 function saveMission() {
-  const missionId = getMissionId();
-  if (!missionId) { alert('Please parse mission notes and ensure a Mission Number is filled in before saving.'); return; }
+  let missionId = getMissionId();
+  if (!missionId) {
+    // Use Firebase mission ID or timestamp as fallback so we never lose data
+    missionId = sharedBlobId || ('mission-' + new Date().toISOString().slice(0,16).replace(/[T:]/g,'-'));
+  }
 
   const snapshot = {
     id: missionId,
