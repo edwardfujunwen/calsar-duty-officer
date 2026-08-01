@@ -403,11 +403,9 @@
   <div class="modal" style="width:580px">
     <h3>🔄 Pull Attendance from D4H</h3>
     <div id="d4hAttTestBadge" style="background:#f0a500;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:10px;display:inline-block;margin-bottom:12px">🧪 TEST MODE — showing mock D4H data</div>
-    <p style="font-size:13px;margin-top:0">Select an incident to pull confirmed attendees from. Only members with a green checkmark (Attending) will be imported.</p>
-    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600);display:block;margin-bottom:6px">Select Incident</label>
-    <select id="d4hIncidentSelect" style="margin-bottom:14px;font-size:13px">
-      <option value="">Loading incidents…</option>
-    </select>
+    <p style="font-size:13px;margin-top:0">Paste the D4H incident URL. Only members with a green checkmark (Attending) will be imported.</p>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-600);display:block;margin-bottom:6px">D4H Incident URL</label>
+    <input type="text" id="d4hIncidentUrl" placeholder="https://calsar.d4h.org/team/incident/12345" autocomplete="off" style="margin-bottom:14px;font-size:13px">
     <div id="d4hAttendancePreview" style="display:none;max-height:280px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px"></div>
     <div id="d4hAttResult" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
     <div class="modal-actions">
@@ -2657,30 +2655,21 @@ async function openD4HAttendanceModal() {
   document.getElementById('d4hImportBtn').disabled = true;
   document.getElementById('d4hImportDayLabel').textContent = days[currentDayIdx]?.label || 'Day 1';
   document.getElementById('d4hAttTestBadge').style.display = isD4HLive() ? 'none' : 'inline-block';
-
-  // Populate incident dropdown
-  const select = document.getElementById('d4hIncidentSelect');
-  select.innerHTML = '<option value="">Loading…</option>';
-  try {
-    let incidents;
-    if (isD4HLive()) {
-      const data = await d4hRequest('/team/incidents');
-      incidents = data.data || data;
-    } else {
-      await new Promise(r => setTimeout(r, 400));
-      incidents = D4H_MOCK_INCIDENTS;
-    }
-    select.innerHTML = '<option value="">— Select an incident —</option>' +
-      incidents.map(i => `<option value="${i.id}">${i.title} (${i.status})</option>`).join('');
-  } catch(e) {
-    select.innerHTML = `<option value="">Error loading: ${e.message}</option>`;
-  }
+  document.getElementById('d4hIncidentUrl').value = '';
+  document.getElementById('d4hAttendancePreview').style.display = 'none';
+  document.getElementById('d4hAttResult').style.display = 'none';
   document.getElementById('d4hAttendanceModal').classList.add('open');
 }
 
+function parseD4HIncidentId(url) {
+  const m = url.match(/\/incident[s]?\/(\d+)/i);
+  return m ? m[1] : null;
+}
+
 async function previewD4HAttendance() {
-  const incidentId = document.getElementById('d4hIncidentSelect').value;
-  if (!incidentId) { alert('Please select an incident first.'); return; }
+  const url = document.getElementById('d4hIncidentUrl').value.trim();
+  const incidentId = isD4HLive() ? parseD4HIncidentId(url) : 'mock';
+  if (isD4HLive() && !incidentId) { alert('Please paste a valid D4H incident URL (e.g. https://calsar.d4h.org/team/incident/12345).'); return; }
 
   const previewEl = document.getElementById('d4hAttendancePreview');
   previewEl.style.display = 'block';
