@@ -962,6 +962,7 @@ function signOut() {
 fbAuth.onAuthStateChanged(function(user) {
   if (user && isAllowedEmail(user.email)) {
     hideAuthScreen();
+    loadMembersFromD4H();
     var bar = document.getElementById('auth-user-bar');
     if (bar) {
       bar.classList.add('visible');
@@ -1034,106 +1035,28 @@ function updateLiveSyncBadge(connected) {
 // ════════════════════════════════
 // MEMBER DATA
 // ════════════════════════════════
-const MEMBERS = [
-  {name:"Adam Mendonca",ref:"637",position:"",phone:"18605971605",region:"San Francisco / Peninsula"},
-  {name:"Amanda Prasuhn",ref:"702",position:"",phone:"13148093600",region:"East Bay"},
-  {name:"Amy Shing",ref:"703",position:"NP",phone:"18175641224",region:"East Bay"},
-  {name:"Amy Wilson",ref:"704",position:"",phone:"14146407890",region:""},
-  {name:"Andrew Ambrosino",ref:"705",position:"WFR",phone:"17149166483",region:""},
-  {name:"Angela Alvarez",ref:"565",position:"RN",phone:"15103039065",region:"East Bay"},
-  {name:"Angelo Lu",ref:"658",position:"EMT, Type1",phone:"14156509849",region:"San Francisco / Peninsula"},
-  {name:"Anoop Goyal",ref:"706",position:"",phone:"16508040085",region:""},
-  {name:"Arash Vahdat",ref:"707",position:"",phone:"14086008186",region:""},
-  {name:"Ariel Parrish",ref:"659",position:"Board, EMT, Type1",phone:"14159025803",region:"San Francisco / Peninsula"},
-  {name:"Beccy Valentine",ref:"640",position:"WFR, Type1",phone:"14158167519",region:"San Francisco / Peninsula"},
-  {name:"Bob Franklin",ref:"656",position:"MD",phone:"14153077594",region:"San Francisco / Peninsula"},
-  {name:"Bobby Lange",ref:"709",position:"",phone:"16509229502",region:""},
-  {name:"Brian Kinnard",ref:"679",position:"WFR, Type1",phone:"19253218995",region:"East Bay"},
-  {name:"Britt Lauer",ref:"680",position:"WFR",phone:"19257087639",region:""},
-  {name:"Carl Kowalski",ref:"681",position:"",phone:"15108821183",region:"East Bay"},
-  {name:"Carl Russell",ref:"619",position:"",phone:"16174802647",region:"San Francisco / Peninsula"},
-  {name:"Caven Montel",ref:"710",position:"",phone:"13175078659",region:""},
-  {name:"Celine Buehl",ref:"662",position:"EMT",phone:"14158164408",region:"San Francisco / Peninsula"},
-  {name:"Chris Sarantos",ref:"652",position:"WFR, Type1",phone:"18056371067",region:"San Francisco / Peninsula"},
-  {name:"Conrad Chan",ref:"531",position:"WFR",phone:"14152900248",region:"San Francisco / Peninsula"},
-  {name:"Craig Volonoski",ref:"643",position:"Recruiting Director, WFR, Type1",phone:"16502078761",region:"San Francisco / Peninsula"},
-  {name:"Doug Lauer",ref:"711",position:"",phone:"15104955065",region:""},
-  {name:"Ed Fu",ref:"606",position:"Board, WFR, Type1",phone:"16505615537",region:"San Francisco / Peninsula"},
-  {name:"Elizabeth Blackburn",ref:"683",position:"WFR, Type1",phone:"18593510607",region:"East Bay"},
-  {name:"Eric Collier",ref:"602",position:"WFR, Type1",phone:"14083140854",region:"South Bay"},
-  {name:"Erik Joelsson",ref:"644",position:"",phone:"16505154940",region:"East Bay"},
-  {name:"Ewelina Lucow",ref:"586",position:"Type1",phone:"12179797192",region:"South Bay"},
-  {name:"Felipe Chacon",ref:"712",position:"",phone:"19152699791",region:""},
-  {name:"Hannah Bulmer",ref:"684",position:"",phone:"14158750288",region:""},
-  {name:"Helena Wong",ref:"641",position:"EMT, Type1",phone:"15105652213",region:"San Francisco / Peninsula"},
-  {name:"Isabella Rogers",ref:"664",position:"WFR, Type1",phone:"14153179955",region:"San Francisco / Peninsula"},
-  {name:"Jagdish Sonti",ref:"667",position:"",phone:"14088328646",region:"South Bay"},
-  {name:"Jake Heller",ref:"686",position:"",phone:"14157175169",region:"San Francisco / Peninsula"},
-  {name:"Jamie Cai",ref:"687",position:"WFR, Type1",phone:"19088870681",region:"East Bay"},
-  {name:"Jason Alvarez",ref:"624",position:"",phone:"15103035551",region:"East Bay"},
-  {name:"Jason Ng",ref:"713",position:"",phone:"14157287717",region:""},
-  {name:"Jason Porto",ref:"510",position:"WFR, Type1",phone:"13038180419",region:"East Bay"},
-  {name:"Jess Fu",ref:"689",position:"",phone:"19095246418",region:"San Francisco / Peninsula"},
-  {name:"Jesse Scarborough",ref:"690",position:"",phone:"13364561889",region:"San Francisco / Peninsula"},
-  {name:"Joe Inch IV",ref:"612",position:"",phone:"18053380224",region:"South Bay"},
-  {name:"Joe Tarnow",ref:"593",position:"WFR, Type1",phone:"15633490503",region:"San Francisco / Peninsula"},
-  {name:"John Lambert",ref:"714",position:"",phone:"13392043241",region:""},
-  {name:"John Landa",ref:"691",position:"",phone:"16127419583",region:"North Bay"},
-  {name:"Julianna Yun Wei",ref:"670",position:"",phone:"19098967615",region:"San Francisco / Peninsula"},
-  {name:"Kaitlin Marquis",ref:"671",position:"WFR, Type1",phone:"14015289421",region:"San Francisco / Peninsula"},
-  {name:"Keith Murray",ref:"715",position:"",phone:"15108139489",region:"North Bay"},
-  {name:"Kim Le",ref:"584",position:"Board",phone:"16507438260",region:"San Francisco / Peninsula"},
-  {name:"Leticia Rivero",ref:"654",position:"",phone:"12092307294",region:"Central Valley"},
-  {name:"Levis Iton",ref:"655",position:"WFR, NP",phone:"14152974135",region:"East Bay"},
-  {name:"Lorne Sachs",ref:"672",position:"PA, Type1",phone:"15309023149",region:"Central Valley"},
-  {name:"Lucie Huet",ref:"538",position:"WFR, Type1",phone:"15105527957",region:"South Bay"},
-  {name:"Luke Boreczky",ref:"649",position:"Board",phone:"15103838982",region:"East Bay"},
-  {name:"Maravilla Clemens",ref:"716",position:"",phone:"18052760075",region:""},
-  {name:"Max Thompson",ref:"717",position:"",phone:"15734807716",region:"San Francisco / Peninsula"},
-  {name:"Melissa Fardy",ref:"718",position:"",phone:"15103323661",region:""},
-  {name:"Mihir Sathe",ref:"694",position:"",phone:"15106765754",region:""},
-  {name:"Mike Dove",ref:"517",position:"Board",phone:"15103346960",region:"East Bay"},
-  {name:"Mike Lenzi",ref:"635",position:"",phone:"15304006129",region:"Central Valley"},
-  {name:"Nan Boden",ref:"695",position:"EMT",phone:"16268279789",region:"Central Valley"},
-  {name:"Nelson Wu",ref:"696",position:"",phone:"18182817807",region:""},
-  {name:"Nicholas Dal Porto",ref:"719",position:"",phone:"16506190922",region:""},
-  {name:"Nick Waters",ref:"697",position:"",phone:"14083967938",region:"San Francisco / Peninsula"},
-  {name:"Orian Williams",ref:"720",position:"",phone:"14157703307",region:""},
-  {name:"Pavel Antonov",ref:"721",position:"",phone:"17028062609",region:""},
-  {name:"Peter Larson",ref:"722",position:"",phone:"15104108242",region:""},
-  {name:"Pranav Reddy",ref:"698",position:"",phone:"19259180999",region:"East Bay"},
-  {name:"Preston Choenchom",ref:"601",position:"Board, WFR, Type1",phone:"15105094894",region:"East Bay"},
-  {name:"Reyna Hulett",ref:"723",position:"",phone:"16502158795",region:""},
-  {name:"Rick McClure",ref:"650",position:"",phone:"19169957607",region:"Central Valley"},
-  {name:"Ryan Flood",ref:"629",position:"Board, WFR, Type1",phone:"17074948747",region:"North Bay"},
-  {name:"Sarah Stadler",ref:"700",position:"",phone:"15206611140",region:"San Francisco / Peninsula"},
-  {name:"Sean Sall",ref:"653",position:"WFR, Type1",phone:"13176828870",region:"East Bay"},
-  {name:"Seth Hardiman",ref:"536",position:"WFR",phone:"18579192227",region:"San Francisco / Peninsula"},
-  {name:"Skyler Chase",ref:"600",position:"WFR",phone:"19253246237",region:"East Bay"},
-  {name:"Sophie Jin",ref:"724",position:"",phone:"13013183598",region:""},
-  {name:"Stephen Wang",ref:"677",position:"WFR",phone:"14158288801",region:"San Francisco / Peninsula"},
-  {name:"Steve Hale",ref:"631",position:"WFR, Type1",phone:"12066055559",region:"San Francisco / Peninsula"},
-  {name:"Steve Warner",ref:"620",position:"WFR",phone:"15182688230",region:"San Francisco / Peninsula"},
-  {name:"Steven Alfaro",ref:"725",position:"",phone:"18622190680",region:""},
-  {name:"Thistle Adams",ref:"726",position:"",phone:"19093679779",region:""},
-  {name:"Tom Collier",ref:"626",position:"WFR, Type1",phone:"15105415950",region:"East Bay"},
-  {name:"Will Hoang",ref:"633",position:"",phone:"16502690231",region:""},
-  {name:"Will Young",ref:"678",position:"WFR, Type1",phone:"16507993387",region:"San Francisco / Peninsula"},
-  {name:"Andre Chang",ref:"569",position:"",phone:"16692787774",region:"Other"},
-  {name:"Ashlynn Dolcini",ref:"642",position:"Safety Officer, EMT, Type1",phone:"15103352422",region:"San Francisco / Peninsula"},
-  {name:"Bill Lowell",ref:"204",position:"",phone:"14083964368",region:""},
-  {name:"Bob Lowell",ref:"546",position:"",phone:"14156864751",region:"North Bay"},
-  {name:"Cynthia Sass",ref:"589",position:"",phone:"15105570745",region:""},
-  {name:"Daniel Franklin",ref:"605",position:"Clinical Coordinator, EMT",phone:"14088056766",region:"South Bay"},
-  {name:"Ken Buscho",ref:"42",position:"",phone:"14087286542",region:"South Bay"},
-  {name:"Madison Aguirre",ref:"623",position:"WFR, Type1",phone:"19162166027",region:""},
-  {name:"Mylissa Malley",ref:"636",position:"",phone:"14084643525",region:"South Bay"},
-  {name:"Peter Rockwell",ref:"187",position:"",phone:"14156065214",region:"San Francisco / Peninsula"},
-  {name:"Ryan Manka-White",ref:"615",position:"WFR",phone:"12026997128",region:"East Bay"},
-  {name:"Samuel Randall",ref:"651",position:"",phone:"14132305592",region:"San Francisco / Peninsula"},
-  {name:"Sean Taylor",ref:"594",position:"",phone:"12177787371",region:"South Bay"},
-  {name:"Wes Ayers",ref:"483",position:"",phone:"19259986467",region:"East Bay"},
-];
+let MEMBERS = []; // populated from D4H on load
+
+async function loadMembersFromD4H() {
+  try {
+    const results = [];
+    for (let page = 0; ; page++) {
+      const data = await d4hRequest(`/team/1682/members?status=OPERATIONAL&size=50&page=${page}`);
+      const batch = data.results || [];
+      results.push(...batch);
+      if (results.length >= (data.totalSize || 0) || batch.length === 0) break;
+    }
+    MEMBERS = results.map(m => ({
+      name: m.name,
+      ref: String(m.ref || ''),
+      position: m.position || '',
+      phone: '',
+      region: '',
+    }));
+  } catch(e) {
+    console.warn('Could not load members from D4H:', e.message);
+  }
+}
 
 // Populate datalist
 const datalist = document.getElementById('memberNames');
