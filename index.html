@@ -2686,10 +2686,10 @@ async function previewD4HAttendance() {
       const idQuery = memberIds.map(id => `id[]=${id}`).join('&');
       const memData = await d4hRequest(`/team/1682/members?${idQuery}&size=50`);
       const memberMap = {};
-      (memData.results || []).forEach(m => { memberMap[m.id] = { name: m.name, ref: m.ref }; });
+      (memData.results || []).forEach(m => { memberMap[m.id] = { name: m.name, ref: m.ref, position: m.position || '' }; });
       attending = attResults.map(a => {
         const mem = memberMap[a.member?.id] || {};
-        return { name: mem.name || `Member #${a.member?.id}`, position: mem.ref || '', status: 'Attending' };
+        return { name: mem.name || `Member #${a.member?.id}`, position: mem.position || '', ref: mem.ref || '', status: 'Attending' };
       });
     } else {
       await new Promise(r => setTimeout(r, 600));
@@ -2735,15 +2735,10 @@ function importD4HAttendance() {
 
   d4hFetchedAttendees.forEach(a => {
     const nameLower = a.name.toLowerCase();
-    const member = MEMBERS.find(m => m.name.toLowerCase() === nameLower)
-      || MEMBERS.find(m => { const w = nameLower.split(/\s+/); return w.every(x => m.name.toLowerCase().includes(x)); });
-
     if (currentAttendees.find(x => x.name.toLowerCase() === nameLower)) {
       skipped++;
-    } else if (member) {
-      currentAttendees.push(member); added++;
     } else {
-      currentAttendees.push({ name: a.name, ref: 'D4H', position: a.position || '', phone: '', region: '' });
+      currentAttendees.push({ name: a.name, ref: a.ref || '', position: a.position || '', phone: '', region: '' });
       added++;
     }
   });
