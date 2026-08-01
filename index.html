@@ -1197,18 +1197,14 @@ function updateApiKeyBtn() {
 }
 
 // ════════════════════════════════
-// CLAUDE API
+// CLAUDE API (via Cloudflare Worker proxy)
 // ════════════════════════════════
+const CLAUDE_PROXY = 'https://calsar-claude-proxy.edwardfujunwen.workers.dev';
+
 async function callAI(prompt) {
-  if (!apiKey) { openApiModal(); throw new Error('API key required'); }
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch(CLAUDE_PROXY, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-allow-browser': 'true'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, messages: [{role:'user',content:prompt}] })
   });
   if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `API error ${resp.status}`); }
@@ -1254,9 +1250,9 @@ async function extractNotesFromFile(file) {
         reader.readAsDataURL(file);
       });
 
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const resp = await fetch(CLAUDE_PROXY, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 2048,
@@ -1342,9 +1338,9 @@ async function importFromD4HFile(file) {
 
     const mimeType = file.type || 'image/png';
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch(CLAUDE_PROXY, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
