@@ -1675,7 +1675,7 @@ async function generateTextMessage() {
     const prompt = `Generate a unit activation text message for a Search and Rescue team. Must be UNDER 150 characters total.
 
 Rules:
-- Start with the county/location of the search (e.g. "Humboldt Co")
+- Start with the county name only, no "Co" or "County" suffix (e.g. "Humboldt")
 - Include ONLY CalSAR-relevant resource types being requested: Type I (T1), Type II (T2), Strong Type II (Strong T2), and Overhead. Ignore K9, Drone, CAP, and any other resources CalSAR cannot provide. Use abbreviations: T1, T2, Strong T2, Overhead.
 - Include the operational period date(s) and briefing time
 - End with exactly "Respond Yes/No via Text OR D4H"
