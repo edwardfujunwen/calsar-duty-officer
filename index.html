@@ -340,6 +340,7 @@
   <button class="api-key-btn" onclick="printBriefing()" style="margin-right:8px">🖨 Print Briefing</button>
   <button class="api-key-btn" id="newMissionBtn" onclick="openNewMissionModal()" style="margin-right:8px;background:rgba(240,165,0,0.35);border-color:rgba(240,165,0,0.6);font-weight:700">🚀 Start New Mission</button>
   <button class="api-key-btn" id="saveMissionBtn" onclick="saveMission()" style="margin-right:8px;background:rgba(45,138,78,0.3);border-color:rgba(45,138,78,0.5)">💾 Save Snapshot</button>
+  <span id="systemStatusBadge" title="Click to recheck" onclick="checkSystemStatus()" style="margin-left:12px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4)">⏳ Checking…</span>
   <span id="auth-user-email" style="font-size:11px;color:rgba(255,255,255,0.5);margin-left:8px"></span>
   <button id="auth-signout-btn" onclick="signOut()" style="margin-left:6px">Sign out</button>
 </div>
@@ -1112,6 +1113,7 @@ fbAuth.onAuthStateChanged(function(user) {
   if (user && isAllowedEmail(user.email)) {
     hideAuthScreen();
     loadMembersFromD4H();
+    checkSystemStatus();
     document.getElementById('auth-user-email').textContent = user.email;
   } else if (user) {
     // Signed in but wrong domain
@@ -1261,6 +1263,41 @@ function updateApiKeyBtn() {
   if (apiKey && d4hLive) { btn.textContent = '✓ Claude + D4H Configured'; btn.classList.add('configured'); }
   else if (apiKey)       { btn.textContent = '✓ Claude Key Configured';    btn.classList.add('configured'); }
   else                   { btn.textContent = '⚙ Configure API Keys';      btn.classList.remove('configured'); }
+}
+
+// ════════════════════════════════
+// SYSTEM STATUS CHECK
+// ════════════════════════════════
+async function checkSystemStatus() {
+  const badge = document.getElementById('systemStatusBadge');
+  if (!badge) return;
+  badge.textContent = '⏳ Checking…';
+  badge.style.background = 'rgba(255,255,255,0.1)';
+  badge.style.color = 'rgba(255,255,255,0.4)';
+
+  const ping = async (url) => {
+    try {
+      const r = await fetch(url, { method: 'OPTIONS' });
+      return r.ok || r.status === 204 || r.status === 200 || r.status === 405;
+    } catch { return false; }
+  };
+
+  const [claude, d4h] = await Promise.all([
+    ping('https://calsar-claude-proxy.edwardfujunwen.workers.dev'),
+    ping('https://calsar-d4h-proxy.edwardfujunwen.workers.dev/whoami'),
+  ]);
+
+  if (claude && d4h) {
+    badge.textContent = '✅ All Systems Operational';
+    badge.style.background = 'rgba(22,163,74,0.35)';
+    badge.style.color = '#86efac';
+  } else {
+    const issues = [!claude && 'Claude AI', !d4h && 'D4H'].filter(Boolean).join(', ');
+    badge.textContent = `⚠ System Issue: ${issues}`;
+    badge.style.background = 'rgba(185,28,28,0.4)';
+    badge.style.color = '#fca5a5';
+    badge.title = `Issue detected with: ${issues}. Contact Ed Fu.`;
+  }
 }
 
 // ════════════════════════════════
