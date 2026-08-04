@@ -1256,6 +1256,7 @@ function saveApiKey() {
 }
 function updateApiKeyBtn() {
   const btn = document.getElementById('apiKeyBtn');
+  if (!btn) return;
   const d4hLive = isD4HLive();
   if (apiKey && d4hLive) { btn.textContent = '✓ Claude + D4H Configured'; btn.classList.add('configured'); }
   else if (apiKey)       { btn.textContent = '✓ Claude Key Configured';    btn.classList.add('configured'); }
@@ -2408,7 +2409,7 @@ function getMissionId() {
 }
 
 function saveMission() {
-  syncD4HAttendance();
+  if (d4hActiveIncidentId) syncD4HAttendance();
   let missionId = getMissionId();
   if (!missionId) {
     // Use Firebase mission ID or timestamp as fallback so we never lose data
